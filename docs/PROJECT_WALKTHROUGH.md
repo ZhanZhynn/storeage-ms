@@ -71,7 +71,7 @@ flowchart LR
 2. Browse prod site → Network tab shows POSTs to `/api/monitoring` (not blocked ingest host)
 3. Sentry project **stock-inventory** → Issues / Performance show events within ~5 min
 
-**Known gap:** `setUserContext` not hooked to login/session (errors are anonymous in Sentry until added).
+**User context:** `contexts/auth-context.tsx` calls `syncSentryUserFromAuth` on session (id, email, role tag).
 
 **Wizard artifacts:** `.env.sentry-build-plugin` (gitignored) for local source map upload; `sentry.client.config.ts` is compatibility stub only.
 
@@ -109,7 +109,7 @@ Details: `docs/Redis_Sentry_PostHog_INTEGRATION_GUIDE.md`
 | Page-size UI | `components/shared/PaginationSelector.tsx`, `pagination-select-styles.ts` |
 | Consumers | All `*Table.tsx` footers (`variant` + `enabled={!isLoading}`) |
 
-Prevents `NotFoundError: removeChild` when App Router navigates between pages while a Radix `SelectPortal` is active (Sentry: `/orders` after `/products`). Rows-per-page change resets `pageIndex` to 0 (avoids empty table when page count shrinks).
+Prevents `NotFoundError: removeChild` when App Router navigates between pages while a Radix `SelectPortal` is active (Sentry: `/orders` after `/products`). Rows-per-page change resets `pageIndex` to 0. Filter/search shrink uses `hooks/use-clamp-pagination-index.ts` to clamp `pageIndex` to the last valid page.
 
 ## 7c. QStash email queue (2026-05-19)
 

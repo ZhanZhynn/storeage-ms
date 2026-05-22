@@ -61,6 +61,7 @@ export function setUserContext(user: {
   email?: string;
   username?: string;
   name?: string;
+  role?: string;
 }): void {
   if (!isSentryEnabled()) {
     return;
@@ -72,9 +73,31 @@ export function setUserContext(user: {
       email: user.email,
       username: user.username || user.name,
     });
+    if (user.role) {
+      Sentry.setTag("role", user.role);
+    }
   } catch {
     // SDK not initialized
   }
+}
+
+/** Sync Sentry user from auth context (login, session restore, logout). */
+export function syncSentryUserFromAuth(user: {
+  id: string;
+  email?: string;
+  name?: string;
+  role?: string;
+} | null): void {
+  if (!user) {
+    clearUserContext();
+    return;
+  }
+  setUserContext({
+    id: user.id,
+    email: user.email,
+    username: user.name,
+    role: user.role,
+  });
 }
 
 export function clearUserContext(): void {

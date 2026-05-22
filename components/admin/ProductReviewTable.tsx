@@ -27,6 +27,7 @@ import { TableSkeleton } from "@/components/ui/table-skeleton";
 import PaginationSelector, {
   type PaginationType,
 } from "@/components/shared/PaginationSelector";
+import { useClampPaginationIndex } from "@/hooks/use-clamp-pagination-index";
 import { Button } from "@/components/ui/button";
 import { GrFormPrevious, GrFormNext } from "react-icons/gr";
 import { BiFirstPage, BiLastPage } from "react-icons/bi";
@@ -72,6 +73,8 @@ export const ProductReviewTable = React.memo(function ProductReviewTable({
       return searchMatch && statusMatch && ratingMatch;
     });
   }, [data, searchTerm, selectedStatuses, selectedRatings]);
+
+  useClampPaginationIndex(filteredData.length, pagination, setPagination);
 
   const table = useReactTable({
     data: filteredData,

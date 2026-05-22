@@ -23,6 +23,7 @@ import { TableSkeleton } from "@/components/ui/table-skeleton";
 import PaginationSelector, {
   type PaginationType,
 } from "@/components/shared/PaginationSelector";
+import { useClampPaginationIndex } from "@/hooks/use-clamp-pagination-index";
 import { Button } from "@/components/ui/button";
 import { GrFormPrevious, GrFormNext } from "react-icons/gr";
 import { LuGitPullRequestDraft } from "react-icons/lu";
@@ -112,6 +113,8 @@ export const ProductTable = React.memo(function ProductTable({
 
     return filtered;
   }, [data, searchTerm, selectedCategory, selectedSuppliers, selectedStatuses]);
+
+  useClampPaginationIndex(filteredData.length, pagination, setPagination);
 
   const table = useReactTable({
     data: filteredData || [],

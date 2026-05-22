@@ -26,6 +26,7 @@ import { TableSkeleton } from "@/components/ui/table-skeleton";
 import PaginationSelector, {
   type PaginationType,
 } from "@/components/shared/PaginationSelector";
+import { useClampPaginationIndex } from "@/hooks/use-clamp-pagination-index";
 import { Button } from "@/components/ui/button";
 import { GrFormPrevious, GrFormNext } from "react-icons/gr";
 import { BiFirstPage, BiLastPage } from "react-icons/bi";
@@ -68,6 +69,8 @@ export const UserManagementTable = React.memo(function UserManagementTable({
       return searchMatch && roleMatch;
     });
   }, [data, searchTerm, selectedRoles]);
+
+  useClampPaginationIndex(filteredData.length, pagination, setPagination);
 
   const table = useReactTable({
     data: filteredData,

@@ -17,6 +17,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/utils/axiosInstance";
 import { getSessionClient } from "@/utils/auth.client";
 import type { User, AuthContextType } from "@/types";
+import { syncSentryUserFromAuth } from "@/lib/monitoring/sentry";
 
 /** Context holding auth state and methods; consumed via useAuth(). */
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -179,6 +180,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setIsCheckingAuth(false);
     }
   }, [mounted, checkSession]);
+
+  // Attach Sentry user (id, email, role) on session changes; clear on logout.
+  useEffect(() => {
+    if (!mounted) return;
+    syncSentryUserFromAuth(user);
+  }, [mounted, user?.id, user?.email, user?.role, user?.name]);
 
   /**
    * Login function - authenticates user and sets session
