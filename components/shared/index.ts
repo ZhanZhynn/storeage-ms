@@ -4,7 +4,17 @@
  */
 
 export { default as PaginationSelector } from "./PaginationSelector";
-export type { PaginationType } from "./PaginationSelector";
+export type {
+  PaginationType,
+  PaginationSelectorLayout,
+  PaginationSelectorProps,
+} from "./PaginationSelector";
+export type { PaginationSelectVariant } from "./pagination-select-styles";
+export { useDeferredRadixSelect } from "@/hooks/use-deferred-radix-select";
+export type {
+  UseDeferredRadixSelectOptions,
+  UseDeferredRadixSelectResult,
+} from "@/hooks/use-deferred-radix-select";
 export { NotificationBell } from "./NotificationBell";
 export { NotificationDropdown } from "./NotificationDropdown";
 export { HelpTooltip } from "./HelpTooltip";

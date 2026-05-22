@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useLayoutEffect } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ColumnDef,
   flexRender,
@@ -20,18 +20,12 @@ import {
 } from "@/components/ui/table";
 import { Warehouse } from "@/types";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
-import { PaginationType } from "@/components/shared/PaginationSelector";
+import PaginationSelector, {
+  type PaginationType,
+} from "@/components/shared/PaginationSelector";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { GrFormPrevious, GrFormNext } from "react-icons/gr";
 import { BiFirstPage, BiLastPage } from "react-icons/bi";
-import { ChevronDown } from "lucide-react";
 
 interface WarehouseTableProps {
   data: Warehouse[];
@@ -83,9 +77,6 @@ export const WarehouseTable = React.memo(function WarehouseTable({
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
-
-  const [pageSizeSelectMounted, setPageSizeSelectMounted] = useState(false);
-  useLayoutEffect(() => setPageSizeSelectMounted(true), []);
 
   return (
     <div className="poppins mt-0">
@@ -151,41 +142,13 @@ export const WarehouseTable = React.memo(function WarehouseTable({
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 mt-4">
-            <div className="flex items-center gap-3">
-              <div className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                Rows per page
-              </div>
-              {!pageSizeSelectMounted ? (
-                <div
-                  className="h-10 rounded-[28px] border border-sky-400/30 dark:border-sky-400/30 bg-gradient-to-r from-sky-500/25 via-sky-500/15 to-sky-500/10 text-gray-700 dark:text-white w-16 sm:w-20 flex items-center justify-between px-2"
-                  aria-hidden
-                >
-                  <span>{pagination.pageSize}</span>
-                  <ChevronDown className="h-4 w-4 opacity-70" />
-                </div>
-              ) : (
-                <Select
-                  value={pagination.pageSize.toString()}
-                  onValueChange={(value) =>
-                    setPagination((prev) => ({
-                      ...prev,
-                      pageSize: Number(value),
-                    }))
-                  }
-                >
-                  <SelectTrigger className="h-10 rounded-[28px] border border-sky-400/30 dark:border-sky-400/30 bg-gradient-to-r from-sky-500/25 via-sky-500/15 to-sky-500/10 dark:from-sky-500/25 dark:via-sky-500/15 dark:to-sky-500/10 text-gray-700 dark:text-white w-16 sm:w-20">
-                    <SelectValue placeholder={pagination.pageSize.toString()} />
-                  </SelectTrigger>
-                  <SelectContent position="popper" sideOffset={5}>
-                    {[4, 6, 8, 10, 15, 20, 30].map((size) => (
-                      <SelectItem key={size} value={size.toString()}>
-                        {size}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
+            <PaginationSelector
+              pagination={pagination}
+              setPagination={setPagination}
+              variant="sky"
+              layout="inline"
+              enabled={!isLoading}
+            />
             <div className="flex items-center justify-center sm:justify-end gap-2 sm:gap-4">
               <Button
                 variant="outline"

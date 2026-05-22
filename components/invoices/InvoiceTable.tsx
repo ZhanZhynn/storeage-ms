@@ -25,15 +25,10 @@ import {
 } from "@/components/ui/table";
 import { Invoice } from "@/types";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
-import { PaginationType } from "@/components/shared/PaginationSelector";
+import PaginationSelector, {
+  type PaginationType,
+} from "@/components/shared/PaginationSelector";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { GrFormPrevious, GrFormNext } from "react-icons/gr";
 import { BiFirstPage, BiLastPage } from "react-icons/bi";
 
@@ -159,39 +154,13 @@ export const InvoiceTable = React.memo(function InvoiceTable({
           {/* Pagination Footer: Rows per page (left) | Page controls (right) */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 mt-4">
             {/* Rows per page - Left */}
-            <div className="flex items-center gap-3">
-              <div className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                Rows per page
-              </div>
-              <Select
-                value={pagination.pageSize.toString()}
-                onValueChange={(value) =>
-                  setPagination((prev) => ({
-                    ...prev,
-                    pageSize: Number(value),
-                  }))
-                }
-              >
-                <SelectTrigger className="h-10 rounded-[28px] border border-violet-400/30 dark:border-violet-400/30 bg-gradient-to-r from-violet-500/25 via-violet-500/15 to-violet-500/10 dark:from-violet-500/25 dark:via-violet-500/15 dark:to-violet-500/10 text-gray-700 dark:text-white shadow-[0_10px_30px_rgba(139,92,246,0.2)] backdrop-blur-sm transition duration-200 hover:border-violet-300/40 hover:from-violet-500/35 hover:via-violet-500/25 hover:to-violet-500/15 dark:hover:border-violet-300/40 dark:hover:from-violet-500/35 dark:hover:via-violet-500/25 dark:hover:to-violet-500/15 font-medium px-2 w-16 sm:w-20">
-                  <SelectValue placeholder={pagination.pageSize.toString()} />
-                </SelectTrigger>
-                <SelectContent
-                  position="popper"
-                  sideOffset={5}
-                  className="rounded-[28px] border border-violet-400/20 dark:border-white/10 bg-white/80 dark:bg-popover/50 backdrop-blur-sm shadow-[0_10px_30px_rgba(139,92,246,0.15)]"
-                >
-                  {[4, 6, 8, 10, 15, 20, 30].map((size) => (
-                    <SelectItem
-                      key={size}
-                      value={size.toString()}
-                      className="text-gray-700 dark:text-white/80 focus:bg-violet-100 dark:focus:bg-white/10 focus:text-gray-900 dark:focus:text-white"
-                    >
-                      {size}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <PaginationSelector
+              pagination={pagination}
+              setPagination={setPagination}
+              variant="violet"
+              layout="inline"
+              enabled={!isLoading}
+            />
 
             {/* Pagination Buttons - Right */}
             <div className="flex items-center justify-center sm:justify-end gap-2 sm:gap-4">

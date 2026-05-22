@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useLayoutEffect } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ColumnDef,
   flexRender,
@@ -20,18 +20,12 @@ import {
 } from "@/components/ui/table";
 import { Supplier } from "@/types";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
-import { PaginationType } from "@/components/shared/PaginationSelector";
+import PaginationSelector, {
+  type PaginationType,
+} from "@/components/shared/PaginationSelector";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { GrFormPrevious, GrFormNext } from "react-icons/gr";
 import { BiFirstPage, BiLastPage } from "react-icons/bi";
-import { ChevronDown } from "lucide-react";
 
 /**
  * Props for SupplierTable component
@@ -105,9 +99,6 @@ export const SupplierTable = React.memo(function SupplierTable({
     getSortedRowModel: getSortedRowModel(),
   });
 
-  const [pageSizeSelectMounted, setPageSizeSelectMounted] = useState(false);
-  useLayoutEffect(() => setPageSizeSelectMounted(true), []);
-
   return (
     <div className="poppins mt-0">
       {/* Show Table Skeleton while loading - matches exact table structure */}
@@ -174,50 +165,13 @@ export const SupplierTable = React.memo(function SupplierTable({
 
           {/* Pagination Footer: Rows per page (left) | Page controls (right) */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 mt-4">
-            {/* Rows per page - Left (defer Select until mount to avoid Radix aria-controls hydration mismatch) */}
-            <div className="flex items-center gap-3">
-              <div className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                Rows per page
-              </div>
-              {!pageSizeSelectMounted ? (
-                <div
-                  className="h-10 rounded-[28px] border border-emerald-400/30 dark:border-emerald-400/30 bg-gradient-to-r from-emerald-500/25 via-emerald-500/15 to-emerald-500/10 text-gray-700 dark:text-white px-2 w-16 sm:w-20 flex items-center justify-between font-medium"
-                  aria-hidden
-                >
-                  <span>{pagination.pageSize}</span>
-                  <ChevronDown className="h-4 w-4 opacity-70" />
-                </div>
-              ) : (
-                <Select
-                  value={pagination.pageSize.toString()}
-                  onValueChange={(value) =>
-                    setPagination((prev) => ({
-                      ...prev,
-                      pageSize: Number(value),
-                    }))
-                  }
-                >
-                  <SelectTrigger className="h-10 rounded-[28px] border border-emerald-400/30 dark:border-emerald-400/30 bg-gradient-to-r from-emerald-500/25 via-emerald-500/15 to-emerald-500/10 dark:from-emerald-500/25 dark:via-emerald-500/15 dark:to-emerald-500/10 text-gray-700 dark:text-white shadow-[0_10px_30px_rgba(16,185,129,0.2)] backdrop-blur-sm transition duration-200 hover:border-emerald-300/40 hover:from-emerald-500/35 hover:via-emerald-500/25 hover:to-emerald-500/15 dark:hover:border-emerald-300/40 dark:hover:from-emerald-500/35 dark:hover:via-emerald-500/25 dark:hover:to-emerald-500/15 font-medium px-2 w-16 sm:w-20">
-                    <SelectValue placeholder={pagination.pageSize.toString()} />
-                  </SelectTrigger>
-                  <SelectContent
-                    position="popper"
-                    sideOffset={5}
-                    className="rounded-[28px] border border-emerald-400/20 dark:border-white/10 bg-white/80 dark:bg-popover/50 backdrop-blur-sm shadow-[0_10px_30px_rgba(16,185,129,0.15)]"
-                  >
-                    {[4, 6, 8, 10, 15, 20, 30].map((size) => (
-                      <SelectItem
-                        key={size}
-                        value={size.toString()}
-                        className="text-gray-700 dark:text-white/80 focus:bg-emerald-100 dark:focus:bg-white/10 focus:text-gray-900 dark:focus:text-white"
-                      >
-                        {size}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
+            <PaginationSelector
+              pagination={pagination}
+              setPagination={setPagination}
+              variant="emerald"
+              layout="inline"
+              enabled={!isLoading}
+            />
 
             {/* Pagination Buttons - Right */}
             <div className="flex items-center justify-center sm:justify-end gap-2 sm:gap-4">

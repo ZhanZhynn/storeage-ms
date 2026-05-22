@@ -1,6 +1,6 @@
 # PROJECT_WALKTHROUGH.md
 
-Agent-oriented map of **stock-inventory** (Stockly). Last updated: 2026-05-19.
+Agent-oriented map of **stock-inventory** (Stockly). Last updated: 2026-05-19 (pre-commit audit re-run).
 
 ## 1. What this app is
 
@@ -101,7 +101,17 @@ Details: `docs/Redis_Sentry_PostHog_INTEGRATION_GUIDE.md`
 
 **Exempt webhooks (no Redis/TanStack):** `app/api/email/queue/process/route.ts`, auth, AI insights, shipping rates, notifications POST — see `API_WRITE_EXEMPT` in invalidate-coverage test.
 
-## 7b. QStash email queue (2026-05-19)
+## 7b. Table pagination Select (Radix portal, 2026-05-22)
+
+| Piece | File |
+|-------|------|
+| Defer hook | `hooks/use-deferred-radix-select.ts` |
+| Page-size UI | `components/shared/PaginationSelector.tsx`, `pagination-select-styles.ts` |
+| Consumers | All `*Table.tsx` footers (`variant` + `enabled={!isLoading}`) |
+
+Prevents `NotFoundError: removeChild` when App Router navigates between pages while a Radix `SelectPortal` is active (Sentry: `/orders` after `/products`).
+
+## 7c. QStash email queue (2026-05-19)
 
 ```mermaid
 flowchart LR
@@ -118,7 +128,7 @@ flowchart LR
 - **Security:** `Receiver.verify` with `QSTASH_CURRENT_SIGNING_KEY` / `QSTASH_NEXT_SIGNING_KEY`
 - **Retries:** webhook 500 on send failure → QStash retries; direct fallback in `queueEmailNotification` still logs-only on error
 
-## 8. Quality gates (audit 2026-05-19)
+## 8. Quality gates (audit 2026-05-19, re-verified)
 
 | Check | Status |
 |-------|--------|
@@ -128,14 +138,17 @@ flowchart LR
 | `npm run test:invalidate` | 200 passed |
 | Product delete | soft/hard/409 + no post-delete GET 404 on detail |
 | QStash email webhook | single body read + Receiver + tests in `qstash-webhook.test.ts` |
+| Radix table Select | `useDeferredRadixSelect` + shared `PaginationSelector` on all tables |
 | Sentry | `/api/monitoring` tunnel |
 | Hydration | `ClientDateDisplay`, `format-stable.ts` |
 | Vercel headers | `lib/vercel/production-headers.ts` |
 | Python | N/A |
 
-**Gaps (OK):** Sentry user context optional; archived SKU unique; export-only `toLocaleDateString`.
+**Gaps (OK):** Sentry user context optional; archived SKU unique; export-only `toLocaleDateString`; optional `use-deferred-radix-select.test.ts`.
 
-**Manual QA:** soft-delete from product detail (1 DELETE, no GET 404); cross-page list refresh without reload; prod email queue after deploy (no Sentry body-read error).
+**Pending commit:** Radix table Select refactor (hook + `PaginationSelector` + 11 tables + `OrderList` static import) — lint/test/build/invalidate all pass locally.
+
+**Manual QA:** soft-delete from product detail (1 DELETE, no GET 404); cross-page list refresh without reload; prod email queue after deploy (no Sentry body-read error); `/products` → `/orders` (no removeChild).
 
 ## 9. When changing code
 

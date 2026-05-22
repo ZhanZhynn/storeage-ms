@@ -12,9 +12,9 @@ import React, {
   useMemo,
   useCallback,
 } from "react";
-import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { PaginationType } from "@/components/shared/PaginationSelector";
+import { OrderTable } from "./OrderTable";
 import { createOrderColumns } from "./OrderTableColumns";
 import { useAuth } from "@/contexts";
 import {
@@ -54,16 +54,6 @@ function getCustomerDisplay(order: Order): string {
   if (order.placedByName) return order.placedByName;
   return "—";
 }
-
-const OrderTable = dynamic(
-  () =>
-    import("./OrderTable").then((mod) => ({
-      default: mod.OrderTable,
-    })),
-  {
-    ssr: true,
-  },
-);
 
 export type OrderListProps = {
   /** When set (e.g. "/admin/orders"), View/Order # links use {detailHrefBase}/{id} */
