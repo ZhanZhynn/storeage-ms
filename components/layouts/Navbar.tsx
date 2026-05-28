@@ -251,7 +251,8 @@ export default function Navbar({ children }: NavbarProps) {
       >
         Skip to main content
       </a>
-      <div className="mx-auto flex w-full h-full max-w-9xl items-center justify-between gap-2 sm:gap-4 px-2 sm:px-4 lg:px-6 overflow-x-hidden">
+      {/* min-w-0 on flex children instead of overflow-x-hidden — hidden overflow-y would clip notification portal ancestors */}
+      <div className="mx-auto flex w-full h-full max-w-9xl min-w-0 items-center justify-between gap-2 sm:gap-4 px-2 sm:px-4 lg:px-6">
         {/* Left Section - Logo and Brand */}
         <div className="flex items-center gap-3">
           <div
@@ -325,7 +326,7 @@ export default function Navbar({ children }: NavbarProps) {
         </nav>
 
         {/* Right Section - Actions */}
-        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+        <div className="flex min-w-0 shrink-0 items-center gap-1 sm:gap-2">
           {/* Notification Bell - Always render to prevent flickering during auth check */}
           {/* Show skeleton during auth check, then show bell when user is available */}
           {isCheckingAuth ? (
