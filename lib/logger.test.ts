@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "@/lib/api/errors";
 
 const captureException = vi.fn();
 const captureMessage = vi.fn();
@@ -33,12 +34,19 @@ describe("logger production 4xx guard", () => {
     expect(captureMessage).not.toHaveBeenCalled();
   });
 
-  it("reports 500 Axios errors to Sentry", async () => {
+  it("reports 500 errors to Sentry", async () => {
     const { logger } = await import("@/lib/logger");
     const serverError = new Error("Internal server error");
     logger.error("Product operation error:", serverError);
     expect(captureException).toHaveBeenCalledWith(serverError, {
       label: "Product operation error:",
     });
+  });
+
+  it("skips Sentry for ApiError 409 (api client interceptor path)", async () => {
+    const { logger } = await import("@/lib/logger");
+    const conflict = new ApiError("Invoice already exists", 409);
+    logger.error("Invoice creation error:", conflict);
+    expect(captureException).not.toHaveBeenCalled();
   });
 });

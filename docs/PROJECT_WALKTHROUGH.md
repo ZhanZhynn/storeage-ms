@@ -120,7 +120,11 @@ Prevents `NotFoundError: removeChild` when App Router navigates between pages wh
 | Piece | File |
 |-------|------|
 | Product body schemas | `lib/validations/product.ts` — `createProductBodySchema`, `updateProductBodySchema`, `productFormSubmitSchema` |
+| Catalog body schemas | `lib/validations/{category,supplier,warehouse}.ts` — `*BodySchema` for POST/PUT |
 | Products API | `app/api/products/route.ts` — POST/PUT `safeParse`, `logger.warn` on validation fail |
+| Catalog APIs | `app/api/{categories,suppliers,warehouses}/route.ts` — same pattern (REQ-0012) |
+| API error barrel | `lib/api/index.ts` — `getErrorHttpStatus`, `isExpectedClientError` |
+| Sentry audit | `docs/SENTRY_ERRORS.md` — historical cases + fix status |
 | Client form | `components/products/ProductFormDialog.tsx` — unified Zod submit |
 | Invoice UX | `hooks/queries/use-invoices.ts` — 409 toast |
 | OAuth deny | `app/api/auth/oauth/google/callback/route.ts` — silent `access_denied` |
@@ -173,7 +177,7 @@ flowchart LR
 |-------|--------|
 | `npm run lint` | pass |
 | `npm run build` | pass |
-| `npm run test` | 239 passed |
+| `npm run test` | 260 passed |
 | `npm run test:invalidate` | 200 passed |
 | Radix table Select | `useDeferredRadixSelect` + `PaginationSelector` (11 tables) |
 | Pagination clamp + page-size reset | `useClampPaginationIndex` + `PaginationSelector` pageIndex 0 |

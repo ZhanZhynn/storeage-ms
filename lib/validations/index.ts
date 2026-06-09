@@ -25,17 +25,29 @@ export {
 
 // Category validations
 export {
+  createCategoryBodySchema,
   createCategorySchema,
+  updateCategoryBodySchema,
   updateCategorySchema,
   type CategoryFormData,
 } from "./category";
 
 // Supplier validations
 export {
+  createSupplierBodySchema,
   createSupplierSchema,
+  updateSupplierBodySchema,
   updateSupplierSchema,
   type SupplierFormData,
 } from "./supplier";
+
+// Warehouse validations
+export {
+  createWarehouseBodySchema,
+  updateWarehouseBodySchema,
+  type CreateWarehouseBody,
+  type UpdateWarehouseBody,
+} from "./warehouse";
 
 // Order validations
 export {

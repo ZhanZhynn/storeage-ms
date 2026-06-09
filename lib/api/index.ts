@@ -9,6 +9,8 @@ export {
   ApiError,
   NetworkError,
   getErrorMessage,
+  getErrorHttpStatus,
+  isExpectedClientError,
   isAuthError,
   isNetworkError,
   isAxiosError,

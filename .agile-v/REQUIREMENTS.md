@@ -111,7 +111,7 @@ Canonical REQ source. All artifacts link via `REQ-XXXX`. Status: `done` | `verif
 |-------|-------|
 | **Priority** | P1 |
 | **Risk** | R2 |
-| **Status** | verify |
+| **Status** | done |
 
 **Acceptance criteria**
 
@@ -191,3 +191,23 @@ Canonical REQ source. All artifacts link via `REQ-XXXX`. Status: `done` | `verif
 - AC5: Invoice 409 toast title "Invoice already exists"; `productFormSubmitSchema` on product dialog
 
 **Artifacts:** `lib/logger.ts`, `lib/api/response-helpers.ts`, `hooks/queries/use-invoices.ts`, `components/products/ProductFormDialog.tsx`
+
+---
+
+## REQ-0012 — Catalog API Zod validation (categories, suppliers, warehouses)
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P1 |
+| **Risk** | R2 |
+| **Status** | done |
+
+**Acceptance criteria**
+
+- AC1: `createCategoryBodySchema` / `updateCategoryBodySchema`, same for suppliers; `lib/validations/warehouse.ts` for warehouses
+- AC2: POST + PUT `safeParse` on `/api/categories`, `/api/suppliers`, `/api/warehouses`; `userId` from session only
+- AC3: Validation failures → 400 + Zod `details`; `logger.warn`
+- AC4: `getErrorHttpStatus` / `isExpectedClientError` exported from `lib/api/index.ts`
+- AC5: Unit tests: `category-api`, `supplier-api`, `warehouse-api`, `errors.test.ts`
+
+**Artifacts:** `lib/validations/{category,supplier,warehouse}.ts`, matching API routes, `docs/SENTRY_ERRORS.md`

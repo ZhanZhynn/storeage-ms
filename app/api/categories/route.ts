@@ -9,6 +9,10 @@ import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/prisma/client";
 import { createAuditLog } from "@/prisma/audit-log";
+import {
+  createCategoryBodySchema,
+  updateCategoryBodySchema,
+} from "@/lib/validations/category";
 
 /**
  * GET /api/categories
@@ -50,23 +54,35 @@ export async function POST(request: NextRequest) {
 
     const userId = session.id;
     const body = await request.json();
-    const { name, status, description, notes } = body;
 
-    if (!name || typeof name !== "string" || name.trim() === "") {
+    const validationResult = createCategoryBodySchema.safeParse(body);
+    if (!validationResult.success) {
+      logger.warn("Invalid category creation data", {
+        errors: validationResult.error.errors,
+      });
       return NextResponse.json(
-        { error: "Category name is required" },
-        { status: 400 }
+        {
+          error: "Invalid request body",
+          details: validationResult.error.errors,
+        },
+        { status: 400 },
       );
     }
+
+    const { name, status, description, notes } = validationResult.data;
 
     // Create category with audit fields and new optional fields
     const category = await prisma.category.create({
       data: {
-        name: name.trim(),
+        name,
         userId,
-        status: status !== undefined ? Boolean(status) : true, // Default to true if not provided
-        description: description && typeof description === "string" ? description.trim() || null : null,
-        notes: notes && typeof notes === "string" ? notes.trim() || null : null,
+        status: status ?? true,
+        description:
+          description && typeof description === "string"
+            ? description.trim() || null
+            : null,
+        notes:
+          notes && typeof notes === "string" ? notes.trim() || null : null,
         createdBy: userId, // Set createdBy same as userId
         createdAt: new Date(),
         updatedAt: null, // Set to null on creation - will be set when updated
@@ -110,14 +126,22 @@ export async function PUT(request: NextRequest) {
 
     const userId = session.id;
     const body = await request.json();
-    const { id, name, status, description, notes } = body;
 
-    if (!id || !name || typeof name !== "string" || name.trim() === "") {
+    const validationResult = updateCategoryBodySchema.safeParse(body);
+    if (!validationResult.success) {
+      logger.warn("Invalid category update data", {
+        errors: validationResult.error.errors,
+      });
       return NextResponse.json(
-        { error: "Category ID and name are required" },
-        { status: 400 }
+        {
+          error: "Invalid request body",
+          details: validationResult.error.errors,
+        },
+        { status: 400 },
       );
     }
+
+    const { id, name, status, description, notes } = validationResult.data;
 
     // Verify category belongs to user
     const existingCategory = await prisma.category.findFirst({
@@ -140,7 +164,7 @@ export async function PUT(request: NextRequest) {
       description?: string | null;
       notes?: string | null;
     } = {
-      name: name.trim(),
+      name,
       updatedBy: userId, // Track who updated the category
       updatedAt: new Date(), // Update timestamp
     };

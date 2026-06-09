@@ -8,6 +8,10 @@ import { getSessionFromRequest } from "@/utils/auth";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/prisma/client";
 import { createAuditLog } from "@/prisma/audit-log";
+import {
+  createWarehouseBodySchema,
+  updateWarehouseBodySchema,
+} from "@/lib/validations/warehouse";
 
 /**
  * GET /api/warehouses
@@ -49,25 +53,33 @@ export async function POST(request: NextRequest) {
 
     const userId = session.id;
     const body = await request.json();
-    const { name, address, type, status } = body;
 
-    if (!name || typeof name !== "string" || name.trim() === "") {
+    const validationResult = createWarehouseBodySchema.safeParse(body);
+    if (!validationResult.success) {
+      logger.warn("Invalid warehouse creation data", {
+        errors: validationResult.error.errors,
+      });
       return NextResponse.json(
-        { error: "Warehouse name is required" },
+        {
+          error: "Invalid request body",
+          details: validationResult.error.errors,
+        },
         { status: 400 },
       );
     }
 
+    const { name, address, type, status } = validationResult.data;
+
     const warehouse = await prisma.warehouse.create({
       data: {
-        name: name.trim(),
+        name,
         userId,
         address:
           address && typeof address === "string"
             ? address.trim() || null
             : null,
         type: type && typeof type === "string" ? type.trim() || null : null,
-        status: status !== undefined ? Boolean(status) : true,
+        status: status ?? true,
         createdBy: userId,
         createdAt: new Date(),
         updatedAt: null,
@@ -108,14 +120,22 @@ export async function PUT(request: NextRequest) {
 
     const userId = session.id;
     const body = await request.json();
-    const { id, name, address, type, status } = body;
 
-    if (!id || !name || typeof name !== "string" || name.trim() === "") {
+    const validationResult = updateWarehouseBodySchema.safeParse(body);
+    if (!validationResult.success) {
+      logger.warn("Invalid warehouse update data", {
+        errors: validationResult.error.errors,
+      });
       return NextResponse.json(
-        { error: "Warehouse ID and name are required" },
+        {
+          error: "Invalid request body",
+          details: validationResult.error.errors,
+        },
         { status: 400 },
       );
     }
+
+    const { id, name, address, type, status } = validationResult.data;
 
     const existing = await prisma.warehouse.findFirst({
       where: { id, userId },
@@ -136,7 +156,7 @@ export async function PUT(request: NextRequest) {
       type?: string | null;
       status?: boolean;
     } = {
-      name: name.trim(),
+      name,
       updatedBy: userId,
       updatedAt: new Date(),
     };

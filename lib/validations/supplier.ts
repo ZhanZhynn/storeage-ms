@@ -5,38 +5,58 @@
 
 import { z } from "zod";
 
+const supplierNameSchema = z
+  .string()
+  .trim()
+  .min(1, "Supplier name is required")
+  .max(100, "Supplier name must be 100 characters or less");
+
+const optionalDescriptionSchema = z
+  .string()
+  .max(500, "Description must be 500 characters or less")
+  .nullable()
+  .optional();
+
+const optionalNotesSchema = z
+  .string()
+  .max(1000, "Notes must be 1000 characters or less")
+  .nullable()
+  .optional();
+
 /**
- * Supplier creation schema
- * Used for creating new suppliers
+ * API request body for POST /api/suppliers (userId from session only)
  */
-export const createSupplierSchema = z.object({
-  name: z
-    .string()
-    .min(1, "Supplier name is required")
-    .max(100, "Supplier name must be 100 characters or less"),
-  userId: z.string().min(1, "User ID is required"),
-  status: z.boolean().optional().default(true), // Active/Inactive status (default: true)
-  description: z.string().max(500, "Description must be 500 characters or less").nullable().optional(), // Optional description
-  notes: z.string().max(1000, "Notes must be 1000 characters or less").nullable().optional(), // Optional notes
+export const createSupplierBodySchema = z.object({
+  name: supplierNameSchema,
+  status: z.boolean().optional().default(true),
+  description: optionalDescriptionSchema,
+  notes: optionalNotesSchema,
 });
 
 /**
- * Supplier update schema
- * Used for updating existing suppliers
+ * Supplier creation schema (includes userId for bulk/import flows)
  */
-export const updateSupplierSchema = z.object({
-  id: z.string().min(1, "Supplier ID is required"),
-  name: z
-    .string()
-    .min(1, "Supplier name is required")
-    .max(100, "Supplier name must be 100 characters or less"),
-  status: z.boolean().optional(), // Optional status update
-  description: z.string().max(500, "Description must be 500 characters or less").nullable().optional(), // Optional description update
-  notes: z.string().max(1000, "Notes must be 1000 characters or less").nullable().optional(), // Optional notes update
+export const createSupplierSchema = createSupplierBodySchema.extend({
+  userId: z.string().min(1, "User ID is required"),
 });
+
+/**
+ * API request body for PUT /api/suppliers
+ */
+export const updateSupplierBodySchema = z.object({
+  id: z.string().min(1, "Supplier ID is required"),
+  name: supplierNameSchema,
+  status: z.boolean().optional(),
+  description: optionalDescriptionSchema,
+  notes: optionalNotesSchema,
+});
+
+/**
+ * Supplier update schema (alias for API compatibility)
+ */
+export const updateSupplierSchema = updateSupplierBodySchema;
 
 /**
  * Supplier form data type
  */
 export type SupplierFormData = z.infer<typeof createSupplierSchema>;
-

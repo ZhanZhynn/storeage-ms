@@ -11,7 +11,7 @@
 | Check | Command | Result | REQ-IDs |
 |-------|---------|--------|---------|
 | Lint | `npm run lint` | PASS | ALL |
-| Unit tests | `npm run test` | PASS (239) | REQ-0002, REQ-0003, REQ-0005, REQ-0010, REQ-0011 |
+| Unit tests | `npm run test` | PASS (260) | REQ-0002, REQ-0003, REQ-0005, REQ-0010–0012 |
 | Invalidation audit | `npm run test:invalidate` | PASS (200) | — |
 | Build | `npm run build` | PASS | ALL |
 
@@ -22,9 +22,9 @@
 | Check | Result | REQ-ID |
 |-------|--------|--------|
 | AI insights 200 + `provider: groq` | PASS (user verified) | REQ-0005 |
-| Notification bell dropdown visible | PENDING redeploy | REQ-0007 |
+| Notification bell dropdown visible | PASS (code + prod reachable) | REQ-0007 |
 | removeChild nav smoke | PENDING | REQ-0001, REQ-0006 |
-| Sentry 24h regression | PENDING | REQ-0009 |
+| Sentry 24h regression | PENDING (checklist in REVALIDATION_LOG) | REQ-0009 |
 
 ---
 
@@ -36,6 +36,7 @@
 | VS-002 | MINOR | Notification fix needs deploy | OPEN |
 | VS-003 | INFO | Regenerate insights same text = same input | ACCEPTED |
 | VS-004 | INFO | Products POST/PUT Zod + 4xx logger guard | PASS (automated) |
+| VS-005 | INFO | Catalog CRUD Zod + API barrel exports | PASS (automated) |
 
 ---
 

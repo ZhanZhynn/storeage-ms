@@ -12,7 +12,7 @@ Next.js 16 App Router, Prisma/MongoDB, TanStack Query, shadcn/Radix, Sentry, Ope
 | Select gate | `components/shared/DeferredSelectGate.tsx` |
 | Notifications | `components/shared/NotificationBell.tsx` |
 | Invalidation | `lib/react-query/invalidate-all.ts` |
-| Sentry issues | `SENTRY_ERRORS.md` |
+| Sentry issues | `docs/SENTRY_ERRORS.md` |
 
 ## Do not
 
