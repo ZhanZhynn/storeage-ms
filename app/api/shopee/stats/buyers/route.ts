@@ -148,7 +148,11 @@ export async function GET(request: NextRequest) {
     const regionCounts: Record<string, number> = {};
     for (const order of allOrdersWithAddress) {
       const addr = order.shippingAddress as Record<string, unknown> | null;
-      const region = String(addr?.state || addr?.city || addr?.country || "Unknown");
+      // Shopee RecipientAddress fields: town, district, city, state, region (country code)
+      // Prefer granular local fields; fall back to region (country code like "SG", "MY")
+      const region = String(
+        addr?.district || addr?.town || addr?.city || addr?.state || addr?.region || "Unknown"
+      );
       regionCounts[region] = (regionCounts[region] || 0) + 1;
     }
 

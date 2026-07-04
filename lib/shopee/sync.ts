@@ -399,11 +399,15 @@ async function fetchEscrowDetails(
       const result = await sdk.payment.getEscrowDetailBatch({
         order_sn_list: batch,
       });
-      const resp = (result as unknown as { response?: { order_income_list?: Record<string, unknown>[] } }).response;
-      const orderIncomeList = resp?.order_income_list || [];
-      for (const item of orderIncomeList) {
-        const sn = String((item as Record<string, unknown>).order_sn || "");
-        if (sn) details.set(sn, item);
+      // Response structure: { response: [{ escrow_detail: { order_sn, order_income, buyer_payment_info } }] }
+      const resp = (result as unknown as { response?: Array<{ escrow_detail?: Record<string, unknown> }> }).response;
+      const escrowList = Array.isArray(resp) ? resp : [];
+      for (const wrapper of escrowList) {
+        const detail = wrapper?.escrow_detail;
+        if (detail) {
+          const sn = String(detail.order_sn || "");
+          if (sn) details.set(sn, detail);
+        }
       }
     } catch (err) {
       logger.warn(`[Shopee Sync] Failed to fetch escrow details for batch starting ${batch[0]}: ${err instanceof Error ? err.message : String(err)}`);
@@ -502,8 +506,9 @@ export async function syncShopeeOrders(
     for (const { sn, status: listStatus } of allOrderSns) {
       try {
         const detail = detailsMap.get(sn);
-        const escrow = escrowMap.get(sn) as { order_income?: Record<string, unknown>; buyer_payment_info?: Record<string, unknown> } | undefined;
-        const orderIncome = escrow?.order_income || {};
+        const escrow = escrowMap.get(sn);
+        const orderIncome = (escrow?.order_income || {}) as Record<string, unknown>;
+        const buyerPaymentInfo = (escrow?.buyer_payment_info || {}) as Record<string, unknown>;
 
         // Use detailed status if available, fallback to list status
         const orderStatus = String(
@@ -548,7 +553,7 @@ export async function syncShopeeOrders(
           sellerTxnFee: Number(orderIncome.seller_transaction_fee || 0),
           shippingFee: Number(orderIncome.actual_shipping_fee || orderIncome.final_shipping_fee || 0),
           sellerIncome: Number(orderIncome.escrow_amount || 0),
-          buyerPaymentMethod: String((escrow?.buyer_payment_info as Record<string, unknown>)?.payment_method || detail?.payment_method || ""),
+          buyerPaymentMethod: String(buyerPaymentInfo.buyer_payment_method || detail?.payment_method || ""),
         };
 
         let orderRecord;
