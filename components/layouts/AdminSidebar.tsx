@@ -22,6 +22,7 @@ import {
   ShoppingBag,
   TrendingUp,
   DollarSign,
+  Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts";
@@ -159,6 +160,11 @@ const SHOPEE_ITEMS: NavItem[] = [
     href: "/admin/shopee/sync-history",
     label: "Sync History",
     icon: History,
+  },
+  {
+    href: "/admin/shopee/import",
+    label: "Excel Import",
+    icon: Upload,
   },
 ];
 

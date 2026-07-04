@@ -374,6 +374,7 @@ export const cacheKeys = {
     productPerformance: (shopId: string) => `shopee:product-performance:${shopId}`,
     profit: (shopId: string) => `shopee:profit:${shopId}`,
     syncLogs: (shopId: string) => `shopee:sync-logs:${shopId}`,
+    importData: (shopId: string) => `shopee:import:${shopId}`,
     pattern: "shopee:*",
   },
 } as const;

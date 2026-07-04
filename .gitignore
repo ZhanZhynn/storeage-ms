@@ -64,3 +64,4 @@ SENTRY_ERRORS.md
 
 .firecrawl
 /docs/shopee_api_docs
+/docs/*.xlsx

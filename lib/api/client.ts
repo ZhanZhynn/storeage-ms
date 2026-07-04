@@ -1929,6 +1929,37 @@ class ApiClient {
         statusText: response.statusText,
       };
     },
+
+    /**
+     * Import orders from Shopee Seller Center Excel export
+     */
+    importFromExcel: async (
+      formData: FormData,
+    ): Promise<
+      ApiResponse<{
+        success: boolean;
+        imported: number;
+        orders: number;
+        created: number;
+        updated: number;
+        itemsCreated: number;
+        errors: string[];
+        warnings: string[];
+        fileName: string;
+        shopName: string;
+      }>
+    > => {
+      const response = await this.client.post(
+        API_ENDPOINTS.shopee.import,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } },
+      );
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
   };
 }
 
