@@ -452,6 +452,7 @@ model ShopeeOrder {
   paymentStatus     String?   // Payment status from Shopee
   totalAmount       Float     // Total order amount
   currency          String?   // Currency code (SGD, MYR, etc.)
+  region            String?   // Country code from order (SG, MY, etc.) — NOT masked unlike shippingAddress
   buyerUsername     String?   // Buyer's username
   buyerEmail        String?   // Buyer's email (if available)
   shippingAddress   Json?     // {name, phone, address, city, state, zip_code, country}

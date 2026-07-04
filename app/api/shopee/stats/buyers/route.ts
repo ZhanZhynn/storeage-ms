@@ -136,23 +136,43 @@ export async function GET(request: NextRequest) {
       orderCount: b._count,
     }));
 
-    // Geographic distribution (extract from shipping addresses)
+    // Geographic distribution (extract from shipping addresses + order-level region)
     const allOrdersWithAddress = await prisma.shopeeOrder.findMany({
       where: {
         shopId: { in: shopIds },
         shippingAddress: { not: null },
       },
-      select: { shippingAddress: true },
+      select: { shippingAddress: true, region: true },
     });
+
+    // Country code mapping for common Shopee regions
+    const COUNTRY_NAMES: Record<string, string> = {
+      SG: "Singapore", MY: "Malaysia", ID: "Indonesia", TH: "Thailand",
+      PH: "Philippines", VN: "Vietnam", TW: "Taiwan", BR: "Brazil",
+      MX: "Mexico", CL: "Chile", CO: "Colombia", PL: "Poland",
+    };
 
     const regionCounts: Record<string, number> = {};
     for (const order of allOrdersWithAddress) {
       const addr = order.shippingAddress as Record<string, unknown> | null;
-      // Shopee RecipientAddress fields: town, district, city, state, region (country code)
-      // Prefer granular local fields; fall back to region (country code like "SG", "MY")
-      const region = String(
-        addr?.district || addr?.town || addr?.city || addr?.state || addr?.region || "Unknown"
-      );
+
+      // Check if address fields are masked (all "****")
+      const isMasked = addr && typeof addr === "object"
+        && ["****", "*"].includes(String(addr.district || ""))
+        && ["****", "*"].includes(String(addr.state || ""));
+
+      let region: string;
+      if (!isMasked && addr?.district) {
+        // Unmasked: use granular local fields
+        region = String(addr.district || addr.town || addr.city || addr.state || "Unknown");
+      } else if (order.region) {
+        // Masked or missing: fall back to order-level region (country code)
+        const code = order.region;
+        region = COUNTRY_NAMES[code] || code;
+      } else {
+        region = "Unknown";
+      }
+
       regionCounts[region] = (regionCounts[region] || 0) + 1;
     }
 

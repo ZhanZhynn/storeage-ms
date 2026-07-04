@@ -537,6 +537,7 @@ export async function syncShopeeOrders(
           paymentStatus: PAYMENT_STATUS_MAP[orderStatus] || "unpaid",
           totalAmount: Number(detail?.total_amount || 0),
           currency: String(detail?.currency || "SGD"),
+          region: String(detail?.region || ""),
           buyerUsername: String(detail?.buyer_username || ""),
           buyerEmail: "", // Shopee doesn't expose buyer email in order detail
           shippingAddress: toInputJson(recipientAddress),
