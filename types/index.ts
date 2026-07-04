@@ -239,7 +239,15 @@ export type {
 } from "./audit-log";
 
 // API types (AdminCounts for admin sidebar counts)
-export type { AdminCounts } from "./api";
+export type {
+  AdminCounts,
+  ShopeeShopData,
+  ShopeeProductData,
+  ShopeeOrderData,
+  ShopeeOrderItemData,
+  ShopeeSyncLogData,
+  ShopeeStatsData,
+} from "./api";
 
 // Re-export email types (InvoiceEmailData is in lib/email/types.ts, not types/)
 export type { InvoiceEmailData } from "@/lib/email/types";

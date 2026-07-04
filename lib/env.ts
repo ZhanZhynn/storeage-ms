@@ -35,7 +35,7 @@ const optionalEnvVars = [
   "QSTASH_TOKEN",
   "QSTASH_CURRENT_SIGNING_KEY",
   "QSTASH_NEXT_SIGNING_KEY",
-  "OPENROUTER_API_KEY",
+  "OPENCODE_ZEN_API_KEY",
   "GROQ_API_KEY",
   "GROQ_MODEL",
   "STRIPE_API_KEY",
@@ -51,6 +51,10 @@ const optionalEnvVars = [
   "SHIPPO_FROM_COUNTRY",
   "SHIPPO_FROM_PHONE",
   "SHIPPO_FROM_EMAIL",
+  // --- Shopee (marketplace sync) - https://open.shopee.com ---
+  "SHOPEE_PARTNER_ID",
+  "SHOPEE_PARTNER_KEY",
+  "SHOPEE_REDIRECT_URL",
 ] as const;
 
 type RequiredEnvVar = (typeof requiredEnvVars)[number];

@@ -3,7 +3,7 @@ import { createChatCompletion } from "./create-chat-completion";
 import { DEFAULT_GROQ_MODEL } from "./groq";
 
 describe("createChatCompletion orchestrator", () => {
-  const originalOpenRouter = process.env.OPENROUTER_API_KEY;
+  const originalZen = process.env.OPENCODE_ZEN_API_KEY;
   const originalGroq = process.env.GROQ_API_KEY;
 
   beforeEach(() => {
@@ -11,14 +11,14 @@ describe("createChatCompletion orchestrator", () => {
   });
 
   afterEach(() => {
-    process.env.OPENROUTER_API_KEY = originalOpenRouter;
+    process.env.OPENCODE_ZEN_API_KEY = originalZen;
     process.env.GROQ_API_KEY = originalGroq;
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
-  it("falls back to Groq when OpenRouter returns 402", async () => {
-    process.env.OPENROUTER_API_KEY = "or-key";
+  it("falls back to Groq when Zen returns 402", async () => {
+    process.env.OPENCODE_ZEN_API_KEY = "zen-key";
     process.env.GROQ_API_KEY = "groq-key";
 
     vi.mocked(fetch)
@@ -52,8 +52,8 @@ describe("createChatCompletion orchestrator", () => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
-  it("uses OpenRouter only when it succeeds", async () => {
-    process.env.OPENROUTER_API_KEY = "or-key";
+  it("uses Zen only when it succeeds", async () => {
+    process.env.OPENCODE_ZEN_API_KEY = "zen-key";
     process.env.GROQ_API_KEY = "groq-key";
 
     vi.mocked(fetch).mockResolvedValueOnce(
@@ -62,7 +62,7 @@ describe("createChatCompletion orchestrator", () => {
           id: "1",
           choices: [
             {
-              message: { role: "assistant", content: "from-or" },
+              message: { role: "assistant", content: "from-zen" },
               finish_reason: "stop",
             },
           ],
@@ -77,13 +77,13 @@ describe("createChatCompletion orchestrator", () => {
 
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.provider).toBe("openrouter");
+      expect(result.provider).toBe("opencode-zen");
     }
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
-  it("Groq fallback ignores OpenRouter model slug from forecasting", async () => {
-    process.env.OPENROUTER_API_KEY = "or-key";
+  it("Groq fallback ignores Zen model slug from forecasting", async () => {
+    process.env.OPENCODE_ZEN_API_KEY = "zen-key";
     process.env.GROQ_API_KEY = "groq-key";
     delete process.env.GROQ_MODEL;
 
@@ -118,7 +118,7 @@ describe("createChatCompletion orchestrator", () => {
   });
 
   it("returns not_configured when no keys", async () => {
-    delete process.env.OPENROUTER_API_KEY;
+    delete process.env.OPENCODE_ZEN_API_KEY;
     delete process.env.GROQ_API_KEY;
 
     const result = await createChatCompletion([

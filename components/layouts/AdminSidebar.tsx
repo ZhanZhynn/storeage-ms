@@ -19,6 +19,7 @@ import {
   User,
   FileText,
   UserCircle,
+  ShoppingBag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts";
@@ -126,6 +127,29 @@ const MY_ACTIVITY_ITEMS: NavItem[] = [
   },
 ];
 
+const SHOPEE_ITEMS: NavItem[] = [
+  {
+    href: "/admin/shopee",
+    label: "Shopee Overview",
+    icon: ShoppingBag,
+  },
+  {
+    href: "/admin/shopee/products",
+    label: "Shopee Products",
+    icon: Package,
+  },
+  {
+    href: "/admin/shopee/orders",
+    label: "Shopee Orders",
+    icon: ShoppingCart,
+  },
+  {
+    href: "/admin/shopee/sync-history",
+    label: "Sync History",
+    icon: History,
+  },
+];
+
 export default function AdminSidebar({ collapsed = false }: { collapsed?: boolean } = {}) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
@@ -187,6 +211,8 @@ export default function AdminSidebar({ collapsed = false }: { collapsed?: boolea
         <div className="w-6 border-t border-gray-200/50 dark:border-white/10 my-1" />
         {renderNavItems(MANAGEMENT_ITEMS)}
         <div className="w-6 border-t border-gray-200/50 dark:border-white/10 my-1" />
+        {renderNavItems(SHOPEE_ITEMS)}
+        <div className="w-6 border-t border-gray-200/50 dark:border-white/10 my-1" />
         {renderNavItems(MY_ACTIVITY_ITEMS)}
         <div className="w-6 border-t border-gray-200/50 dark:border-white/10 my-1" />
         <Link
@@ -213,6 +239,12 @@ export default function AdminSidebar({ collapsed = false }: { collapsed?: boolea
         Product & System Management
       </p>
       {renderNavItems(MANAGEMENT_ITEMS)}
+
+      {/* Shopee Integration */}
+      <p className="px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        Shopee
+      </p>
+      {renderNavItems(SHOPEE_ITEMS)}
 
       {/* My Activity */}
       <p className="px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">

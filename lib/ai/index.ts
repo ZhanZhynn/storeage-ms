@@ -1,11 +1,12 @@
 /**
  * AI / LLM utilities
- * OpenRouter primary, Groq fallback via createChatCompletion orchestrator.
+ * OpenCode Zen primary, Groq fallback via createChatCompletion orchestrator.
  */
 
 export {
   createChatCompletion,
   isLlmConfigured,
+  isZenConfigured,
   isOpenRouterConfigured,
   isGroqConfigured,
   type ChatMessage,
@@ -16,20 +17,9 @@ export {
   type LlmProvider,
 } from "./create-chat-completion";
 
-export { createOpenRouterChatCompletion } from "./openrouter";
+export { createZenChatCompletion, DEFAULT_ZEN_MODEL } from "./opencode-zen";
 export {
   createGroqChatCompletion,
   DEFAULT_GROQ_MODEL,
   resolveGroqModel,
 } from "./groq";
-
-/** @deprecated Use ChatMessage */
-export type { OpenRouterMessage } from "./openrouter";
-/** @deprecated Use ChatCompletionOptions */
-export type { OpenRouterChatOptions } from "./openrouter";
-/** @deprecated Use ChatCompletionResponse */
-export type { OpenRouterChatResponse } from "./openrouter";
-/** @deprecated Use ChatCompletionResult */
-export type { OpenRouterResult } from "./openrouter";
-/** @deprecated Use ChatCompletionFailureKind */
-export type { OpenRouterFailureKind } from "./openrouter";

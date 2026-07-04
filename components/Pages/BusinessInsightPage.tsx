@@ -102,7 +102,7 @@ export default function BusinessInsightPage({
   // State for QR code URL - set on client side to avoid SSR window error
   const [qrUrl, setQrUrl] = useState("");
 
-  // AI insights (OpenRouter) — generated on demand
+  // AI insights (OpenCode Zen) — generated on demand
   const [aiInsightsText, setAiInsightsText] = useState<string | null>(null);
   const [aiInsightsLoading, setAiInsightsLoading] = useState(false);
   const [aiInsightsUnavailable, setAiInsightsUnavailable] = useState(false);
@@ -748,7 +748,7 @@ export default function BusinessInsightPage({
 
         if (res.status === 503) {
           setAiInsightsUnavailable(true);
-          if (code === "LLM_BILLING" || code === "OPENROUTER_BILLING") {
+          if (code === "LLM_BILLING") {
             toast({
               title: "AI credits exhausted",
               description: errMsg,
@@ -758,7 +758,7 @@ export default function BusinessInsightPage({
             toast({
               title: "AI insights not configured",
               description:
-                "Set OPENROUTER_API_KEY and/or GROQ_API_KEY in .env to enable AI-powered insights.",
+                "Set OPENCODE_ZEN_API_KEY and/or GROQ_API_KEY in .env to enable AI-powered insights.",
               variant: "destructive",
             });
           }
@@ -1430,7 +1430,7 @@ export default function BusinessInsightPage({
               </div>
               {aiInsightsUnavailable ? (
                 <p className="text-sm text-gray-600 dark:text-white/60">
-                  Configure OPENROUTER_API_KEY and/or GROQ_API_KEY in .env to enable AI-powered
+                  Configure OPENCODE_ZEN_API_KEY and/or GROQ_API_KEY in .env to enable AI-powered
                   recommendations.
                 </p>
               ) : aiInsightsText ? (

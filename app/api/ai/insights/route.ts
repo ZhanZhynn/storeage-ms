@@ -1,5 +1,5 @@
 /**
- * AI-powered inventory insights via OpenRouter (primary) or Groq (fallback).
+ * AI-powered inventory insights via OpenCode Zen (primary) or Groq (fallback).
  * POST /api/ai/insights — accepts summary of analytics, returns short AI recommendations
  */
 
@@ -17,7 +17,7 @@ import { aiInsightsBodySchema } from "@/lib/validations/ai";
 const SYSTEM_PROMPT = `You are a concise inventory advisor. Given a short summary of inventory metrics, reply with 2-4 brief, actionable recommendations (one short sentence each). Focus on reorder suggestions, low-stock attention, and value optimization. Keep the tone professional and direct. Do not use markdown or bullet symbols.`;
 
 const LLM_NOT_CONFIGURED =
-  "AI insights are not configured. Set OPENROUTER_API_KEY and/or GROQ_API_KEY in .env.";
+  "AI insights are not configured. Set OPENCODE_ZEN_API_KEY and/or GROQ_API_KEY in .env.";
 
 export async function POST(request: NextRequest) {
   try {
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     if (!result.ok) {
       if (result.kind === "billing") {
         return serviceUnavailableResponse(
-          "AI credits exhausted on configured providers. Add OpenRouter credits or set GROQ_API_KEY.",
+          "AI credits exhausted on configured providers. Add OpenCode Zen credits or set GROQ_API_KEY.",
           {
             code: "LLM_BILLING",
             provider: result.provider,

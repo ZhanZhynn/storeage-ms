@@ -1,5 +1,5 @@
 /**
- * Shared types for LLM chat providers (OpenRouter, Groq).
+ * Shared types for LLM chat providers (OpenCode Zen, Groq).
  * Both use OpenAI-compatible chat/completions JSON shape.
  */
 
@@ -34,7 +34,7 @@ export type ChatCompletionFailureKind =
   | "rate_limit"
   | "upstream";
 
-export type LlmProvider = "openrouter" | "groq";
+export type LlmProvider = "opencode-zen" | "groq";
 
 export type ChatCompletionResult =
   | { ok: true; data: ChatCompletionResponse; provider: LlmProvider }

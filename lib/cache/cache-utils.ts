@@ -350,6 +350,28 @@ export const cacheKeys = {
   portal: {
     pattern: "portal:*",
   },
+
+  /**
+   * Shopee integration cache keys
+   */
+  shopee: {
+    all: "shopee:all",
+    shops: (userId: string) => `shopee:shops:${userId}`,
+    shopDetail: (id: string) => `shopee:shop:${id}`,
+    products: (shopId: string, filters?: Record<string, unknown>) => {
+      const filterStr = filters ? JSON.stringify(filters) : "default";
+      return `shopee:products:${shopId}:${filterStr}`;
+    },
+    productDetail: (id: string) => `shopee:product:${id}`,
+    orders: (shopId: string, filters?: Record<string, unknown>) => {
+      const filterStr = filters ? JSON.stringify(filters) : "default";
+      return `shopee:orders:${shopId}:${filterStr}`;
+    },
+    orderDetail: (id: string) => `shopee:order:${id}`,
+    stats: (shopId: string) => `shopee:stats:${shopId}`,
+    syncLogs: (shopId: string) => `shopee:sync-logs:${shopId}`,
+    pattern: "shopee:*",
+  },
 } as const;
 
 /**
@@ -379,6 +401,7 @@ export async function invalidateAllServerCaches(): Promise<void> {
     invalidateCache(cacheKeys.clientPortal.pattern),
     invalidateCache(cacheKeys.supplierPortal.pattern),
     invalidateCache(cacheKeys.sessions.pattern),
+    invalidateCache(cacheKeys.shopee.pattern),
     invalidateCache("forecasting:*"),
     invalidateCache("system-config:*"),
   ]);

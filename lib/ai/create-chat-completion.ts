@@ -1,13 +1,10 @@
 /**
- * LLM orchestrator: OpenRouter first, Groq fallback on failure.
+ * LLM orchestrator: OpenCode Zen first, Groq fallback on failure.
  * Used by /api/ai/insights and forecasting AI helpers.
  */
 
 import { createGroqChatCompletion, isGroqConfigured } from "./groq";
-import {
-  createOpenRouterChatCompletion,
-  isOpenRouterConfigured,
-} from "./openrouter";
+import { createZenChatCompletion, isZenConfigured } from "./opencode-zen";
 import type {
   ChatCompletionFailureKind,
   ChatCompletionOptions,
@@ -24,13 +21,14 @@ export type {
   LlmProvider,
 } from "./types";
 
-/** Re-export for callers that only check OpenRouter */
-export { isOpenRouterConfigured } from "./openrouter";
+/** Re-export for callers that only check Zen */
+export { isZenConfigured as isOpenRouterConfigured } from "./opencode-zen";
+export { isZenConfigured } from "./opencode-zen";
 export { isGroqConfigured } from "./groq";
 
 /** True when at least one provider has an API key */
 export function isLlmConfigured(): boolean {
-  return isOpenRouterConfigured() || isGroqConfigured();
+  return isZenConfigured() || isGroqConfigured();
 }
 
 const FALLBACK_KINDS: ChatCompletionFailureKind[] = [
@@ -41,34 +39,31 @@ const FALLBACK_KINDS: ChatCompletionFailureKind[] = [
 ];
 
 function shouldTryGroqFallback(
-  openRouterResult: Extract<ChatCompletionResult, { ok: false }>,
+  zenResult: Extract<ChatCompletionResult, { ok: false }>,
 ): boolean {
   if (!isGroqConfigured()) {
     return false;
   }
-  return FALLBACK_KINDS.includes(openRouterResult.kind);
+  return FALLBACK_KINDS.includes(zenResult.kind);
 }
 
 /**
- * Try OpenRouter; on billing/rate-limit/upstream/not_configured, try Groq.
+ * Try OpenCode Zen; on billing/rate-limit/upstream/not_configured, try Groq.
  */
 export async function createChatCompletion(
   messages: ChatMessage[],
   options: ChatCompletionOptions = {},
 ): Promise<ChatCompletionResult> {
-  const openRouterResult = await createOpenRouterChatCompletion(
-    messages,
-    options,
-  );
+  const zenResult = await createZenChatCompletion(messages, options);
 
-  if (openRouterResult.ok) {
-    return openRouterResult;
+  if (zenResult.ok) {
+    return zenResult;
   }
 
-  if (shouldTryGroqFallback(openRouterResult)) {
+  if (shouldTryGroqFallback(zenResult)) {
     console.warn(
-      "[LLM] OpenRouter failed, trying Groq fallback:",
-      openRouterResult.kind,
+      "[LLM] OpenCode Zen failed, trying Groq fallback:",
+      zenResult.kind,
     );
     const groqResult = await createGroqChatCompletion(messages, options);
     if (groqResult.ok) {
@@ -77,5 +72,5 @@ export async function createChatCompletion(
     return groqResult;
   }
 
-  return openRouterResult;
+  return zenResult;
 }

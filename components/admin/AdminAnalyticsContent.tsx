@@ -113,7 +113,7 @@ export default function AdminAnalyticsContent({
           toast({
             title: "AI insights not configured",
             description:
-              "Set OPENROUTER_API_KEY and/or GROQ_API_KEY in .env to enable AI-powered insights.",
+              "Set OPENCODE_ZEN_API_KEY and/or GROQ_API_KEY in .env to enable AI-powered insights.",
             variant: "destructive",
           });
         } else {
@@ -1375,7 +1375,7 @@ export default function AdminAnalyticsContent({
             </Button>
             {aiUnavailable && (
               <p className="text-sm text-muted-foreground">
-                AI insights require OPENROUTER_API_KEY and/or GROQ_API_KEY. Set in .env to
+                AI insights require OPENCODE_ZEN_API_KEY and/or GROQ_API_KEY. Set in .env to
                 enable.
               </p>
             )}

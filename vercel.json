@@ -10,5 +10,11 @@
         { "key": "Permissions-Policy", "value": "camera=(), geolocation=()" }
       ]
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/shopee/sync/cron",
+      "schedule": "0 2 * * *"
+    }
   ]
 }

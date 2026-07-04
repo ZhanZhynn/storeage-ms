@@ -137,6 +137,21 @@ export const API_ENDPOINTS = {
   auditLogs: {
     base: "/audit-logs",
   },
+
+  // Shopee Integration
+  shopee: {
+    auth: "/shopee/auth",
+    callback: "/shopee/callback",
+    shops: "/shopee/shops",
+    shopDetail: (id: string) => `/shopee/shops/${id}`,
+    sync: "/shopee/sync",
+    syncLogs: "/shopee/sync/logs",
+    products: "/shopee/products",
+    productDetail: (id: string) => `/shopee/products/${id}`,
+    orders: "/shopee/orders",
+    orderDetail: (id: string) => `/shopee/orders/${id}`,
+    stats: "/shopee/stats",
+  },
 } as const;
 
 /**

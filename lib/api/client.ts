@@ -82,6 +82,11 @@ import type {
   AuditLog,
   AuditLogFilters,
   AdminCounts,
+  ShopeeShopData,
+  ShopeeProductData,
+  ShopeeOrderData,
+  ShopeeSyncLogData,
+  ShopeeStatsData,
 } from "@/types";
 
 /**
@@ -1561,6 +1566,207 @@ class ApiClient {
         message: string;
         invoice: Invoice;
       }>(`${API_ENDPOINTS.invoices.base}/${id}/send`, {});
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+  };
+
+  /**
+   * Shopee Integration API methods
+   */
+  shopee = {
+    /**
+     * Get OAuth authorization URL
+     */
+    getAuthUrl: async (): Promise<ApiResponse<{ url: string }>> => {
+      const response = await this.client.get<{ url: string }>(
+        API_ENDPOINTS.shopee.auth,
+      );
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+
+    /**
+     * List connected Shopee shops
+     */
+    getShops: async (): Promise<ApiResponse<ShopeeShopData[]>> => {
+      const response = await this.client.get<ShopeeShopData[]>(
+        API_ENDPOINTS.shopee.shops,
+      );
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+
+    /**
+     * Get shop detail
+     */
+    getShop: async (id: string): Promise<ApiResponse<ShopeeShopData>> => {
+      const response = await this.client.get<ShopeeShopData>(
+        API_ENDPOINTS.shopee.shopDetail(id),
+      );
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+
+    /**
+     * Disconnect (remove) a Shopee shop
+     */
+    disconnectShop: async (
+      id: string,
+    ): Promise<ApiResponse<{ success: boolean }>> => {
+      const response = await this.client.delete<{ success: boolean }>(
+        API_ENDPOINTS.shopee.shopDetail(id),
+      );
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+
+    /**
+     * Trigger sync for a shop
+     */
+    triggerSync: async (data: {
+      shopId: number;
+      syncType: "products" | "orders" | "all";
+    }): Promise<
+      ApiResponse<{
+        products?: { synced: number; created: number; updated: number; errors: string[] };
+        orders?: { synced: number; created: number; updated: number; errors: string[] };
+      }>
+    > => {
+      const response = await this.client.post(API_ENDPOINTS.shopee.sync, data);
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+
+    /**
+     * Get sync history logs
+     */
+    getSyncLogs: async (
+      shopId?: string,
+    ): Promise<ApiResponse<ShopeeSyncLogData[]>> => {
+      const url = shopId
+        ? `${API_ENDPOINTS.shopee.syncLogs}?shopId=${shopId}`
+        : API_ENDPOINTS.shopee.syncLogs;
+      const response = await this.client.get<ShopeeSyncLogData[]>(url);
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+
+    /**
+     * List Shopee products (from local DB)
+     */
+    getProducts: async (params?: {
+      shopId?: string;
+      page?: number;
+      limit?: number;
+      search?: string;
+    }): Promise<
+      ApiResponse<{ products: ShopeeProductData[]; total: number; page: number; limit: number }>
+    > => {
+      const searchParams = new URLSearchParams();
+      if (params?.shopId) searchParams.set("shopId", params.shopId);
+      if (params?.page) searchParams.set("page", String(params.page));
+      if (params?.limit) searchParams.set("limit", String(params.limit));
+      if (params?.search) searchParams.set("search", params.search);
+      const qs = searchParams.toString();
+      const url = qs
+        ? `${API_ENDPOINTS.shopee.products}?${qs}`
+        : API_ENDPOINTS.shopee.products;
+      const response = await this.client.get(url);
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+
+    /**
+     * Get Shopee product detail
+     */
+    getProduct: async (id: string): Promise<ApiResponse<ShopeeProductData>> => {
+      const response = await this.client.get<ShopeeProductData>(
+        API_ENDPOINTS.shopee.productDetail(id),
+      );
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+
+    /**
+     * List Shopee orders (from local DB)
+     */
+    getOrders: async (params?: {
+      shopId?: string;
+      page?: number;
+      limit?: number;
+      status?: string;
+    }): Promise<
+      ApiResponse<{ orders: ShopeeOrderData[]; total: number; page: number; limit: number }>
+    > => {
+      const searchParams = new URLSearchParams();
+      if (params?.shopId) searchParams.set("shopId", params.shopId);
+      if (params?.page) searchParams.set("page", String(params.page));
+      if (params?.limit) searchParams.set("limit", String(params.limit));
+      if (params?.status) searchParams.set("status", params.status);
+      const qs = searchParams.toString();
+      const url = qs
+        ? `${API_ENDPOINTS.shopee.orders}?${qs}`
+        : API_ENDPOINTS.shopee.orders;
+      const response = await this.client.get(url);
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+
+    /**
+     * Get Shopee order detail
+     */
+    getOrder: async (id: string): Promise<ApiResponse<ShopeeOrderData>> => {
+      const response = await this.client.get<ShopeeOrderData>(
+        API_ENDPOINTS.shopee.orderDetail(id),
+      );
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+
+    /**
+     * Get aggregated Shopee stats
+     */
+    getStats: async (
+      shopId?: string,
+    ): Promise<ApiResponse<ShopeeStatsData>> => {
+      const url = shopId
+        ? `${API_ENDPOINTS.shopee.stats}?shopId=${shopId}`
+        : API_ENDPOINTS.shopee.stats;
+      const response = await this.client.get<ShopeeStatsData>(url);
       return {
         data: response.data,
         status: response.status,

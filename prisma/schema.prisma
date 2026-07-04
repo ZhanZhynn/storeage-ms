@@ -242,6 +242,7 @@ model User {
   //   orderStatusUpdates: boolean
   // }
   notifications Notification[] // In-app notifications (one-to-many relationship)
+  shopeeShops   ShopeeShop[]   // Shopee connected shops (one-to-many relationship)
 }
 
 model UserAction {
@@ -378,4 +379,142 @@ model AuditLog {
   @@index([action])
   @@index([entityType])
   @@index([createdAt])
+}
+
+// =============================================================================
+// Shopee Integration Models
+// =============================================================================
+
+model ShopeeShop {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String    @db.ObjectId // Owner user
+  shopId         Int       // Shopee shop ID (assigned by Shopee)
+  shopName       String    // Shop display name
+  shopStatus     String    // Shop status from Shopee
+  region         String    // Shopee region (GLOBAL, CHINA, BRAZIL)
+  merchantId     Int?      // Merchant ID (for merchant-level operations)
+  isCb           Boolean?  // Cross-border flag
+  expireTime     DateTime? // Shop expiration time
+  accessToken    String    // Shopee access token (plaintext, same security model as env secrets)
+  refreshToken   String    // Shopee refresh token
+  tokenExpiry    DateTime? // When access_token expires (computed from expire_in)
+  lastSyncedAt   DateTime? // Last successful sync timestamp
+  createdAt      DateTime  @default(now()) @db.Date
+  updatedAt      DateTime? @db.Date
+  createdBy      String    @db.ObjectId
+  updatedBy      String?   @db.ObjectId
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products       ShopeeProduct[]
+  orders         ShopeeOrder[]
+  syncLogs       ShopeeSyncLog[]
+
+  @@unique([userId, shopId])
+  @@index([userId])
+  @@index([shopId])
+}
+
+model ShopeeProduct {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  shopId         String    @db.ObjectId // FK to ShopeeShop
+  userId         String    @db.ObjectId // Owner user
+  shopeeItemId   Int       // Shopee item ID (assigned by Shopee)
+  itemName       String    // Product name on Shopee
+  description    String?   // Product description
+  categoryId     Int?      // Shopee category ID
+  price          Float     // Base price (from price_info)
+  stock          Int       // Total stock (sum of all models)
+  imageUrl       String?   // Primary image URL
+  imageUrls      Json?     // All image URLs (array)
+  status         String    // Item status (NORMAL, DELETED, etc.)
+  models         Json?     // Variant/model data (array of {model_id, name, price, stock, sku})
+  weight         Float?    // Weight in grams
+  dimension      Json?     // {length, width, height}
+  lastSyncedAt   DateTime? // Last sync timestamp
+  createdAt      DateTime  @default(now()) @db.Date
+  updatedAt      DateTime? @db.Date
+  createdBy      String    @db.ObjectId
+  updatedBy      String?   @db.ObjectId
+  shop           ShopeeShop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, shopeeItemId])
+  @@index([shopId])
+  @@index([shopeeItemId])
+  @@index([userId])
+}
+
+model ShopeeOrder {
+  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  shopId            String    @db.ObjectId // FK to ShopeeShop
+  userId            String    @db.ObjectId // Owner user
+  shopeeOrderId     String    @unique // Shopee order SN (e.g., 231204xxxxxx)
+  orderStatus       String    // UNPAID, READY_TO_SHIP, PROCESSED, SHIPPED, COMPLETED, CANCELLED
+  paymentStatus     String?   // Payment status from Shopee
+  totalAmount       Float     // Total order amount
+  currency          String?   // Currency code (SGD, MYR, etc.)
+  buyerUsername     String?   // Buyer's username
+  buyerEmail        String?   // Buyer's email (if available)
+  shippingAddress   Json?     // {name, phone, address, city, state, zip_code, country}
+  trackingNumber    String?   // Shopee tracking number
+  trackingCarrier   String?   // Logistics carrier
+  logisticsStatus   String?   // Logistics status
+  createdAt         DateTime  @default(now()) @db.Date
+  updatedAt         DateTime? @db.Date
+  createdBy         String    @db.ObjectId
+  updatedBy         String?   @db.ObjectId
+  lastSyncedAt      DateTime? // Last sync timestamp
+  // Shopee timestamps
+  shopeeCreatedAt   DateTime? // Original create time on Shopee
+  shopeeUpdatedAt   DateTime? // Original update time on Shopee
+  paidAt            DateTime? // Payment time
+  shippedAt         DateTime? // Shipping time
+  deliveredAt       DateTime? // Delivery time
+  completedAt       DateTime? // Completion time
+  cancelledAt       DateTime? // Cancellation time
+  shop              ShopeeShop  @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  items             ShopeeOrderItem[]
+
+  @@index([shopId])
+  @@index([userId])
+  @@index([orderStatus])
+  @@index([shopeeCreatedAt])
+  @@index([createdAt])
+}
+
+model ShopeeOrderItem {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId          String   @db.ObjectId // FK to ShopeeOrder
+  productId        String?  @db.ObjectId // Optional link to local Product (for cross-reference)
+  shopeeModelId    Int?     // Shopee model ID (variant)
+  productName      String   // Product name snapshot
+  sku              String?  // SKU snapshot
+  quantity         Int      // Ordered quantity
+  price            Float    // Unit price
+  subtotal         Float    // quantity * price
+  createdAt        DateTime @default(now()) @db.Date
+  order            ShopeeOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model ShopeeSyncLog {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  shopId           String    @db.ObjectId // FK to ShopeeShop
+  userId           String    @db.ObjectId // Who triggered the sync
+  syncType         String    // "products", "orders", "all"
+  status           String    @default("running") // "running", "completed", "completed_with_errors", "failed"
+  itemsSynced      Int       @default(0) // Total items processed
+  itemsCreated     Int       @default(0) // New items created
+  itemsUpdated     Int       @default(0) // Existing items updated
+  errors           Json?     // Array of error messages
+  startedAt        DateTime  @default(now()) @db.Date
+  completedAt      DateTime? @db.Date
+  triggeredBy      String    @default("manual") // "manual", "cron", "webhook"
+  shop             ShopeeShop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId])
+  @@index([userId])
+  @@index([userId, shopId])
+  @@index([status])
+  @@index([startedAt])
 }

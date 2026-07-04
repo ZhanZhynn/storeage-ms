@@ -26,6 +26,7 @@
     "script:fix-product2-stock": "tsx scripts/fix-product2-stock.ts"
   },
   "dependencies": {
+    "@congminh1254/shopee-sdk": "^1.13.0",
     "@hookform/resolvers": "^3.10.0",
     "@imagekit/nodejs": "^7.3.0",
     "@prisma/client": "^6.4.1",

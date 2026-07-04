@@ -129,3 +129,17 @@ export {
   type UpdateStockAllocationFormData,
   type CreateStockTransferFormData,
 } from "./stock-allocation";
+
+// Shopee validations
+export {
+  shopeeSyncBodySchema,
+  shopeeProductListQuerySchema,
+  shopeeOrderListQuerySchema,
+  shopeeShopDisconnectSchema,
+  shopeeCallbackQuerySchema,
+  type ShopeeSyncBody,
+  type ShopeeProductListQuery,
+  type ShopeeOrderListQuery,
+  type ShopeeShopDisconnect,
+  type ShopeeCallbackQuery,
+} from "./shopee";

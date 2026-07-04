@@ -45,11 +45,11 @@ ${urgentProducts ? `- Urgent reorder needed: ${urgentProducts}` : ""}
 Provide brief, professional insights focusing on immediate actions.`;
 
   try {
-    // model is OpenRouter-only; Groq fallback uses GROQ_MODEL / DEFAULT_GROQ_MODEL
+    // model is Zen-only; Groq fallback uses GROQ_MODEL / DEFAULT_GROQ_MODEL
     const response = await createChatCompletion(
       [{ role: "user", content: prompt }],
       {
-        model: "openai/gpt-3.5-turbo",
+        model: "opencode/mimo-v2.5-free",
         max_tokens: 200,
       },
     );

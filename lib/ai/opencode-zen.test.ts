@@ -1,17 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { createOpenRouterChatCompletion } from "./openrouter";
+import { createZenChatCompletion } from "./opencode-zen";
 
-describe("createOpenRouterChatCompletion", () => {
-  const originalKey = process.env.OPENROUTER_API_KEY;
+describe("createZenChatCompletion", () => {
+  const originalKey = process.env.OPENCODE_ZEN_API_KEY;
 
   beforeEach(() => {
-    process.env.OPENROUTER_API_KEY = "test-key";
+    process.env.OPENCODE_ZEN_API_KEY = "test-key";
     delete process.env.GROQ_API_KEY;
     vi.stubGlobal("fetch", vi.fn());
   });
 
   afterEach(() => {
-    process.env.OPENROUTER_API_KEY = originalKey;
+    process.env.OPENCODE_ZEN_API_KEY = originalKey;
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
@@ -21,7 +21,7 @@ describe("createOpenRouterChatCompletion", () => {
       new Response("insufficient credits", { status: 402 }),
     );
 
-    const result = await createOpenRouterChatCompletion([
+    const result = await createZenChatCompletion([
       { role: "user", content: "hi" },
     ]);
 
@@ -48,14 +48,14 @@ describe("createOpenRouterChatCompletion", () => {
       ),
     );
 
-    const result = await createOpenRouterChatCompletion([
+    const result = await createZenChatCompletion([
       { role: "user", content: "hi" },
     ]);
 
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.data.choices[0]?.message.content).toBe("ok");
-      expect(result.provider).toBe("openrouter");
+      expect(result.provider).toBe("opencode-zen");
     }
   });
 });
