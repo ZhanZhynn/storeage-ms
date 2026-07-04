@@ -12,7 +12,10 @@ import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
 
 export async function GET(request: NextRequest) {
   try {
-    const rateLimitResponse = await withRateLimit(request, defaultRateLimits.standard);
+    const rateLimitResponse = await withRateLimit(
+      request,
+      defaultRateLimits.standard,
+    );
     if (rateLimitResponse) return rateLimitResponse;
 
     const session = await getSessionFromRequest(request);
@@ -126,8 +129,12 @@ export async function GET(request: NextRequest) {
     const repeatBuyers = repeatBuyersResult.length;
     const repeatRate = totalBuyers > 0 ? (repeatBuyers / totalBuyers) * 100 : 0;
 
-    const totalOrdersCount = avgOrdersResult.reduce((sum, b) => sum + b._count, 0);
-    const avgOrdersPerBuyer = totalBuyers > 0 ? totalOrdersCount / totalBuyers : 0;
+    const totalOrdersCount = avgOrdersResult.reduce(
+      (sum, b) => sum + b._count,
+      0,
+    );
+    const avgOrdersPerBuyer =
+      totalBuyers > 0 ? totalOrdersCount / totalBuyers : 0;
 
     // Top buyers
     const topBuyers = topBuyersRaw.map((b) => ({
@@ -147,9 +154,18 @@ export async function GET(request: NextRequest) {
 
     // Country code mapping for common Shopee regions
     const COUNTRY_NAMES: Record<string, string> = {
-      SG: "Singapore", MY: "Malaysia", ID: "Indonesia", TH: "Thailand",
-      PH: "Philippines", VN: "Vietnam", TW: "Taiwan", BR: "Brazil",
-      MX: "Mexico", CL: "Chile", CO: "Colombia", PL: "Poland",
+      SG: "Singapore",
+      MY: "Malaysia",
+      ID: "Indonesia",
+      TH: "Thailand",
+      PH: "Philippines",
+      VN: "Vietnam",
+      TW: "Taiwan",
+      BR: "Brazil",
+      MX: "Mexico",
+      CL: "Chile",
+      CO: "Colombia",
+      PL: "Poland",
     };
 
     const regionCounts: Record<string, number> = {};
@@ -157,15 +173,27 @@ export async function GET(request: NextRequest) {
       const addr = order.shippingAddress as Record<string, unknown> | null;
 
       // Check if address fields are masked (all "****")
-      const isMasked = addr && typeof addr === "object"
-        && ["****", "*"].includes(String(addr.district || ""))
-        && ["****", "*"].includes(String(addr.state || ""));
+      const isMasked =
+        addr &&
+        typeof addr === "object" &&
+        ["****", "*"].includes(String(addr.district || "")) &&
+        ["****", "*"].includes(String(addr.state || ""));
 
       let region: string;
-      if (!isMasked && addr?.state && String(addr.state).trim() && String(addr.state) !== "****") {
+      if (
+        !isMasked &&
+        addr?.state &&
+        String(addr.state).trim() &&
+        String(addr.state) !== "****"
+      ) {
         // Unmasked: use state (province) as the primary region
         region = String(addr.state).trim();
-      } else if (!isMasked && addr?.city && String(addr.city).trim() && String(addr.city) !== "****") {
+      } else if (
+        !isMasked &&
+        addr?.city &&
+        String(addr.city).trim() &&
+        String(addr.city) !== "****"
+      ) {
         // State missing — fall back to city
         region = String(addr.city).trim();
       } else if (order.region) {
