@@ -34,9 +34,8 @@ export async function POST(request: NextRequest) {
     }
 
     const sent = await sendTelegramMessage(
-      "🔔 *Test Notification*\n\nYour Telegram notifications are configured correctly!\n\nYou will receive SLA ship\\-by alerts here\\.",
+      "🔔 Test Notification\n\nYour Telegram notifications are configured correctly!\n\nYou will receive SLA ship-by alerts here.",
       {
-        parseMode: "MarkdownV2",
         credentials: {
           token: setting.telegramBotToken,
           chatId: setting.telegramChatId,
