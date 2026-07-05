@@ -76,19 +76,41 @@ export interface ShopeeShopData {
   lowStockThreshold: number;
 }
 
+export interface ShopeeProductVariantData {
+  id: string;
+  productId: string;
+  shopId: string;
+  shopeeItemId: number;
+  itemSku: string | null;
+  modelId: number;
+  modelName: string;
+  modelSku: string | null;
+  price: number;
+  originalPrice: number | null;
+  stock: number;
+  status: string;
+  tierIndex: unknown;
+  weight: number | null;
+  dimension: unknown;
+  lastSyncedAt: string | null;
+  createdAt: string;
+}
+
 export interface ShopeeProductData {
   id: string;
   shopId: string;
   shopeeItemId: number;
   itemName: string;
   description: string | null;
+  itemSku: string | null;
   categoryId: number | null;
   price: number;
   originalPrice: number | null;
   stock: number;
   imageUrl: string | null;
   status: string;
-  models: unknown;
+  tierVariation: unknown;
+  variants: ShopeeProductVariantData[];
   weight: number | null;
   lastSyncedAt: string | null;
   createdAt: string;
@@ -145,6 +167,7 @@ export interface ShopeeSlaAlert {
 
 export interface ShopeeOrderItemData {
   id: string;
+  variantId: string | null;
   shopeeModelId: number | null;
   productName: string;
   sku: string | null;

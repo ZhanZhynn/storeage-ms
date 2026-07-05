@@ -243,6 +243,7 @@ export type {
   AdminCounts,
   ShopeeShopData,
   ShopeeProductData,
+  ShopeeProductVariantData,
   ShopeeOrderData,
   ShopeeOrderItemData,
   ShopeeSyncLogData,

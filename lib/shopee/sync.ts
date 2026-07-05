@@ -263,8 +263,20 @@ export async function syncShopeeProducts(
         const imageUrls = imageInfo?.image_url_list || [];
         const imageUrl = imageUrls[0] || "";
 
-        // Extract models
-        const models = detail?.has_model ? detail : null;
+        // Extract tier_variation and models from modelMap for variant items
+        const modelResp = detail?.has_model ? modelMap.get(itemId) ?? null : null;
+        const tierVariation = modelResp?.tier_variation ?? null;
+        const modelList = ((modelResp?.model || []) as Array<{
+          model_id?: number;
+          model_name?: string;
+          model_sku?: string;
+          model_status?: string;
+          tier_index?: number[];
+          price_info?: Array<{ current_price?: number; original_price?: number }>;
+          stock_info_v2?: { summary_info?: { total_available_stock?: number } };
+          weight?: string;
+          dimension?: Record<string, unknown>;
+        }>);
 
         const existing = await prisma.shopeeProduct.findFirst({
           where: { shopId: shop.id, shopeeItemId: itemId },
@@ -276,6 +288,7 @@ export async function syncShopeeProducts(
           shopeeItemId: itemId,
           itemName: String(detail?.item_name || ""),
           description: String(detail?.description || ""),
+          itemSku: String(detail?.item_sku || "") || null,
           categoryId: Number(detail?.category_id || 0),
           price,
           originalPrice: originalPrice > 0 ? originalPrice : null,
@@ -283,24 +296,90 @@ export async function syncShopeeProducts(
           imageUrl,
           imageUrls: toInputJson(imageUrls),
           status: String(detail?.item_status || "NORMAL"),
-          models: toInputJson(models),
+          tierVariation: toInputJson(tierVariation),
           weight: Number(detail?.weight || 0),
           dimension: toInputJson(detail?.dimension ?? null),
           lastSyncedAt: new Date(),
           updatedAt: new Date(),
         };
 
+        let productRecord;
         if (existing) {
-          await prisma.shopeeProduct.update({
+          productRecord = await prisma.shopeeProduct.update({
             where: { id: existing.id },
             data: productData,
           });
           updated++;
         } else {
-          await prisma.shopeeProduct.create({
+          productRecord = await prisma.shopeeProduct.create({
             data: { ...productData, createdBy: userId },
           });
           created++;
+        }
+
+        // Upsert variants if product has models
+        if (modelList.length > 0) {
+          const currentModelIds = new Set<number>();
+
+          for (const m of modelList) {
+            const modelId = Number(m.model_id || 0);
+            if (!modelId) continue;
+            currentModelIds.add(modelId);
+
+            const variantPriceInfo = m.price_info?.[0];
+            const variantPrice = Number(variantPriceInfo?.current_price || variantPriceInfo?.original_price || 0);
+            const variantOriginalPrice = Number(variantPriceInfo?.original_price || variantPriceInfo?.current_price || 0);
+            const variantStock = Number(m.stock_info_v2?.summary_info?.total_available_stock || 0);
+
+            const parentItemSku = String(detail?.item_sku || "") || null;
+            const variantData = {
+              productId: productRecord.id,
+              shopId: shop.id,
+              userId,
+              shopeeItemId: itemId,
+              itemSku: parentItemSku,
+              modelId,
+              modelName: String(m.model_name || ""),
+              modelSku: String(m.model_sku || "") || null,
+              price: variantPrice,
+              originalPrice: variantOriginalPrice > 0 ? variantOriginalPrice : null,
+              stock: variantStock,
+              status: String(m.model_status || "MODEL_NORMAL"),
+              tierIndex: toInputJson(m.tier_index ?? null),
+              weight: m.weight ? Number(m.weight) : null,
+              dimension: toInputJson(m.dimension ?? null),
+              lastSyncedAt: new Date(),
+              updatedAt: new Date(),
+            };
+
+            const existingVariant = await prisma.shopeeProductVariant.findFirst({
+              where: { productId: productRecord.id, modelId },
+            });
+
+            if (existingVariant) {
+              await prisma.shopeeProductVariant.update({
+                where: { id: existingVariant.id },
+                data: variantData,
+              });
+            } else {
+              await prisma.shopeeProductVariant.create({
+                data: { ...variantData, createdBy: userId },
+              });
+            }
+          }
+
+          // Delete stale variants no longer in model list
+          await prisma.shopeeProductVariant.deleteMany({
+            where: {
+              productId: productRecord.id,
+              modelId: { notIn: Array.from(currentModelIds) },
+            },
+          });
+        } else {
+          // No models — remove any stale variants if product previously had them
+          await prisma.shopeeProductVariant.deleteMany({
+            where: { productId: productRecord.id },
+          });
         }
 
         synced++;
@@ -556,6 +635,20 @@ export async function syncShopeeOrders(
     // Step 2.6: Fetch package details for SLA ship_by_date tracking
     const packageMap = await fetchPackageDetails(sdk);
 
+    // Step 2.7: Build variant lookup map for O(1) order item → variant linkage
+    // Key: `${shopeeItemId}:${modelId}` → ShopeeProductVariant.id
+    const variantLookup = new Map<string, string>();
+    {
+      const allVariants = await prisma.shopeeProductVariant.findMany({
+        where: { shopId: shop.id },
+        select: { id: true, shopeeItemId: true, modelId: true },
+      });
+      for (const v of allVariants) {
+        variantLookup.set(`${v.shopeeItemId}:${v.modelId}`, v.id);
+      }
+      logger.info(`[Shopee Sync] Built variant lookup map with ${variantLookup.size} entries`);
+    }
+
     // Step 3: Upsert each order with full details
     for (const { sn, status: listStatus } of allOrderSns) {
       try {
@@ -641,11 +734,18 @@ export async function syncShopeeOrders(
           });
 
           const itemPromises = orderItems.map(
-            (item: Record<string, unknown>) =>
-              prisma.shopeeOrderItem.create({
+            (item: Record<string, unknown>) => {
+              const shopeeItemId = Number(item.item_id || 0);
+              const modelId = Number(item.model_id || 0);
+              const variantId =
+                shopeeItemId && modelId
+                  ? variantLookup.get(`${shopeeItemId}:${modelId}`) ?? null
+                  : null;
+              return prisma.shopeeOrderItem.create({
                 data: {
                   orderId: orderRecord.id,
-                  shopeeModelId: Number(item.model_id || 0),
+                  variantId,
+                  shopeeModelId: modelId,
                   productName: String(item.item_name || ""),
                   sku: String(item.model_sku || item.item_sku || ""),
                   quantity: Number(item.model_quantity_purchased || item.quantity || 0),
@@ -654,7 +754,8 @@ export async function syncShopeeOrders(
                     Number(item.model_quantity_purchased || item.quantity || 0) *
                     Number(item.model_original_price || item.model_discounted_price || 0),
                 },
-              }),
+              });
+            },
           );
 
           await Promise.all(itemPromises);

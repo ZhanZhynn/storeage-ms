@@ -423,6 +423,7 @@ model ShopeeProduct {
   shopeeItemId   Int       // Shopee item ID (assigned by Shopee)
   itemName       String    // Product name on Shopee
   description    String?   // Product description
+  itemSku        String?   // Seller-input parent SKU (from getItemBaseInfo.item_sku)
   categoryId     Int?      // Shopee category ID
   price          Float     // Current/sale price (from price_info.current_price)
   originalPrice  Float?    // Original/before-discount price (from price_info.original_price)
@@ -430,7 +431,7 @@ model ShopeeProduct {
   imageUrl       String?   // Primary image URL
   imageUrls      Json?     // All image URLs (array)
   status         String    // Item status (NORMAL, DELETED, etc.)
-  models         Json?     // Variant/model data (array of {model_id, name, price, stock, sku})
+  tierVariation  Json?     // Variation axes config (e.g. [{name: "Color", option_list: [...]}])
   weight         Float?    // Weight in grams
   dimension      Json?     // {length, width, height}
   lastSyncedAt   DateTime? // Last sync timestamp
@@ -439,11 +440,46 @@ model ShopeeProduct {
   createdBy      String    @db.ObjectId
   updatedBy      String?   @db.ObjectId
   shop           ShopeeShop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  variants       ShopeeProductVariant[]
 
   @@unique([shopId, shopeeItemId])
   @@index([shopId])
   @@index([shopeeItemId])
   @@index([userId])
+  @@index([itemSku])
+}
+
+model ShopeeProductVariant {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  productId      String    @db.ObjectId // FK to ShopeeProduct
+  shopId         String    @db.ObjectId // Denormalized for direct queries
+  userId         String    @db.ObjectId
+  shopeeItemId   Int       // Denormalized parent item ID
+  itemSku        String?   // Denormalized parent SKU (from ShopeeProduct.itemSku)
+  modelId        Int       // Shopee model_id
+  modelName      String    // e.g. "Red / XL"
+  modelSku       String?   // Seller-input variant SKU
+  price          Float
+  originalPrice  Float?
+  stock          Int
+  status         String    // MODEL_NORMAL / MODEL_UNAVAILABLE
+  tierIndex      Json?     // [0, 1] indices into tier_variation
+  weight         Float?
+  dimension      Json?
+  lastSyncedAt   DateTime?
+  createdAt      DateTime  @default(now()) @db.Date
+  updatedAt      DateTime?
+  createdBy      String    @db.ObjectId
+  updatedBy      String?   @db.ObjectId
+  product        ShopeeProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItems     ShopeeOrderItem[]
+
+  @@unique([productId, modelId])
+  @@index([modelSku])
+  @@index([itemSku])
+  @@index([shopeeItemId])
+  @@index([shopId])
+  @@index([productId])
 }
 
 model ShopeeOrder {
@@ -503,6 +539,7 @@ model ShopeeOrderItem {
   id               String   @id @default(auto()) @map("_id") @db.ObjectId
   orderId          String   @db.ObjectId // FK to ShopeeOrder
   productId        String?  @db.ObjectId // Optional link to local Product (for cross-reference)
+  variantId        String?  @db.ObjectId // FK to ShopeeProductVariant (denormalized link)
   shopeeModelId    Int?     // Shopee model ID (variant)
   productName      String   // Product name snapshot
   sku              String?  // SKU snapshot
@@ -511,9 +548,11 @@ model ShopeeOrderItem {
   subtotal         Float    // quantity * price
   createdAt        DateTime @default(now()) @db.Date
   order            ShopeeOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant          ShopeeProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
   @@index([productId])
+  @@index([variantId])
 }
 
 model ShopeeSyncLog {

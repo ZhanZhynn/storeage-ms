@@ -290,7 +290,7 @@ const getShopeeProducts: ChatTool = {
     function: {
       name: "getShopeeProducts",
       description:
-        "List Shopee products synced locally for the user. Optionally filter to low-stock items (stock at or below a threshold, default 10).",
+        "List Shopee products synced locally for the user. Optionally filter by variant/parent SKU, low-stock items, or shop. Returns variant details (modelSku, modelName, stock per variant) when available.",
       parameters: {
         type: "object",
         properties: {
@@ -301,6 +301,11 @@ const getShopeeProducts: ChatTool = {
             description: "If set, only return products with stock <= this value.",
           },
           shopId: { type: "integer", description: "Optional Shopee shop id." },
+          sku: {
+            type: "string",
+            description:
+              "Filter by SKU. Matches against parent item SKU (itemSku) or any variant SKU (modelSku).",
+          },
         },
       },
     },
@@ -317,23 +322,48 @@ const getShopeeProducts: ChatTool = {
         : typeof args.shopId === "string" && args.shopId.trim()
           ? Number(args.shopId)
           : undefined;
-    const cacheKey = `chat:shopeeProducts:${session.id}:${shopeeShopId ?? "all"}:${limit}:${lowStockThreshold ?? "all"}`;
+    const skuFilter =
+      typeof args.sku === "string" && args.sku.trim()
+        ? args.sku.trim()
+        : undefined;
+    const cacheKey = `chat:shopeeProducts:${session.id}:${shopeeShopId ?? "all"}:${limit}:${lowStockThreshold ?? "all"}:${skuFilter ?? "all"}`;
     const data = await cached(cacheKey, 60, async () => {
       const shopIds = await resolveShopIds(session, shopeeShopId);
       if (shopIds.length === 0) return { count: 0, products: [] };
+
+      const where: Record<string, unknown> = { shopId: { in: shopIds } };
+      if (skuFilter) {
+        where.OR = [
+          { itemSku: skuFilter },
+          { variants: { some: { modelSku: skuFilter } } },
+        ];
+      }
+
       const products = await prisma.shopeeProduct.findMany({
-        where: { shopId: { in: shopIds } },
+        where,
         orderBy: { stock: "asc" },
         take: limit,
         select: {
           id: true,
           shopeeItemId: true,
           itemName: true,
+          itemSku: true,
           price: true,
           stock: true,
           status: true,
           imageUrl: true,
           lastSyncedAt: true,
+          variants: {
+            select: {
+              modelId: true,
+              modelName: true,
+              modelSku: true,
+              price: true,
+              stock: true,
+              status: true,
+            },
+            orderBy: { stock: "asc" },
+          },
         },
       });
       const filtered = lowStockThreshold
@@ -345,11 +375,20 @@ const getShopeeProducts: ChatTool = {
           id: p.id,
           shopeeItemId: p.shopeeItemId,
           name: p.itemName,
+          itemSku: p.itemSku,
           price: p.price,
           stock: p.stock,
           status: p.status,
           imageUrl: p.imageUrl,
           lastSyncedAt: p.lastSyncedAt?.toISOString() ?? null,
+          variants: p.variants.map((v) => ({
+            modelId: v.modelId,
+            modelName: v.modelName,
+            modelSku: v.modelSku,
+            price: v.price,
+            stock: v.stock,
+            status: v.status,
+          })),
         })),
       };
     });

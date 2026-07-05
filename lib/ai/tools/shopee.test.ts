@@ -200,13 +200,38 @@ describe("getShopeeProducts handler", () => {
   it("filters by lowStockThreshold when provided", async () => {
     prismaMock.shopeeShop.findMany.mockResolvedValue([{ id: "shop-1" }]);
     prismaMock.shopeeProduct.findMany.mockResolvedValue([
-      { id: "p1", shopeeItemId: 1, itemName: "Low", price: 5, stock: 3, status: "active", imageUrl: null, lastSyncedAt: null },
-      { id: "p2", shopeeItemId: 2, itemName: "Ok", price: 5, stock: 100, status: "active", imageUrl: null, lastSyncedAt: null },
+      { id: "p1", shopeeItemId: 1, itemName: "Low", itemSku: null, price: 5, stock: 3, status: "active", imageUrl: null, lastSyncedAt: null, variants: [] },
+      { id: "p2", shopeeItemId: 2, itemName: "Ok", itemSku: null, price: 5, stock: 100, status: "active", imageUrl: null, lastSyncedAt: null, variants: [] },
     ]);
     const result = await getHandler("getShopeeProducts")({ lowStockThreshold: 10 }, session);
     expect(result.ok).toBe(true);
     expect(result.data).toMatchObject({ count: 1 });
     expect((result.data as { products: { name: string }[] }).products[0].name).toBe("Low");
+  });
+
+  it("filters by variant SKU when sku param provided", async () => {
+    prismaMock.shopeeShop.findMany.mockResolvedValue([{ id: "shop-1" }]);
+    prismaMock.shopeeProduct.findMany.mockResolvedValue([
+      {
+        id: "p1",
+        shopeeItemId: 100,
+        itemName: "T-Shirt",
+        itemSku: "TEE-001",
+        price: 20,
+        stock: 50,
+        status: "NORMAL",
+        imageUrl: null,
+        lastSyncedAt: null,
+        variants: [
+          { modelId: 1, modelName: "Red / S", modelSku: "TEE-RED-S", price: 20, stock: 25, status: "MODEL_NORMAL" },
+          { modelId: 2, modelName: "Blue / M", modelSku: "TEE-BLU-M", price: 20, stock: 25, status: "MODEL_NORMAL" },
+        ],
+      },
+    ]);
+    const result = await getHandler("getShopeeProducts")({ sku: "TEE-RED-S" }, session);
+    expect(result.ok).toBe(true);
+    expect(result.data).toMatchObject({ count: 1 });
+    expect((result.data as { products: { variants: { modelSku: string }[] }[] }).products[0].variants[0].modelSku).toBe("TEE-RED-S");
   });
 });
 
