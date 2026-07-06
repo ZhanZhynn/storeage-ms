@@ -38,6 +38,18 @@ function getRoleColor(role: string | null): string {
   }
 }
 
+function getStatusColor(status: string): string {
+  switch (status) {
+    case "approved":
+      return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300";
+    case "rejected":
+      return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300";
+    case "pending":
+    default:
+      return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300";
+  }
+}
+
 type SortableHeaderProps = {
   column: Column<UserForAdmin, unknown>;
   label: string;
@@ -79,12 +91,6 @@ function SortableHeader({ column, label }: SortableHeaderProps) {
     </DropdownMenu>
   );
 }
-
-const PROTECTED_EMAILS = [
-  "test@admin.com",
-  "test@supplier.com",
-  "test@client.com",
-];
 
 /** Derive display username from email when username is empty (e.g. Gmail login) */
 function getDisplayUsername(user: UserForAdmin): string {
@@ -156,6 +162,14 @@ export function createUserManagementColumns(
       },
     },
     {
+      accessorKey: "status",
+      header: ({ column }) => <SortableHeader column={column} label="Status" />,
+      cell: ({ row }) => {
+        const s = row.original.status ?? "approved";
+        return <Badge className={getStatusColor(s)}>{s}</Badge>;
+      },
+    },
+    {
       accessorKey: "createdAt",
       header: ({ column }) => <SortableHeader column={column} label="Joined" />,
       cell: ({ getValue }) => (
@@ -171,10 +185,7 @@ export function createUserManagementColumns(
         const u = row.original;
         const href = `${base}/${u.id}`;
         const isOwner = currentUserId != null && currentUserId === u.id;
-        const isProtected = PROTECTED_EMAILS.includes(
-          (u.email ?? "").toLowerCase(),
-        );
-        const canEdit = isOwner && !isProtected;
+        const canEdit = isOwner;
         const canDelete = false; // Disabled for all in list; only owner on detail page per requirements
         return (
           <DropdownMenu>

@@ -19,7 +19,8 @@ export type NotificationType =
   | "support_ticket_replied"
   | "system_alert"
   | "import_complete"
-  | "import_failed";
+  | "import_failed"
+  | "user_registration_pending";
 
 /**
  * Notification metadata interface

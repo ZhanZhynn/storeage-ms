@@ -6,7 +6,21 @@
 
 import { logger } from "@/lib/logger";
 import { isBrevoConfigured, getAdminEmail } from "./brevo";
+
+/**
+ * Escape HTML special characters to prevent injection in email content.
+ * Used on unauthenticated user input before interpolation into HTML emails.
+ */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 import { sendEmailViaBrevo } from "./brevo";
+import { prisma } from "@/prisma/client";
 import {
   generateLowStockAlertEmail,
   generateStockOutNotificationEmail,
@@ -718,6 +732,90 @@ export async function sendOrderStatusUpdate(
       error: error instanceof Error ? error.message : "Unknown error",
       orderNumber: data.orderNumber,
       recipientEmail,
+    });
+  }
+}
+
+/**
+ * Send pending registration notification email to all admins.
+ * Fetches all admin users and sends an email to each about the new registration.
+ *
+ * @param newUserName - Name of the newly registered user
+ * @param newUserEmail - Email of the newly registered user
+ */
+export async function sendPendingRegistrationAdminEmail(
+  newUserName: string,
+  newUserEmail: string,
+): Promise<void> {
+  if (!isBrevoConfigured()) {
+    logger.warn("Brevo not configured, skipping pending registration email");
+    return;
+  }
+
+  try {
+    const admins = await prisma.user.findMany({
+      where: { role: "admin" },
+      select: { id: true, email: true, name: true },
+    });
+
+    if (admins.length === 0) {
+      logger.warn("No admin users found to email about pending registration");
+      return;
+    }
+
+    const safeName = escapeHtml(newUserName);
+    const safeEmail = escapeHtml(newUserEmail);
+
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #1e40af;">New User Registration Pending Approval</h2>
+        <p>A new user has registered and is awaiting admin approval:</p>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Name</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${safeName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Email</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${safeEmail}</td>
+          </tr>
+        </table>
+        <p>Please log in to the admin panel to approve or reject this registration.</p>
+        <p style="color: #6b7280; font-size: 12px;">This is an automated notification from ShelfAware.</p>
+      </div>
+    `;
+
+    const textContent = `New User Registration Pending Approval\n\nA new user has registered and is awaiting admin approval:\n\nName: ${newUserName}\nEmail: ${newUserEmail}\n\nPlease log in to the admin panel to approve or reject this registration.`;
+
+    const recipients = admins.map((admin) => ({
+      email: admin.email,
+      name: admin.name || "Admin",
+    }));
+
+    const result = await sendEmailViaBrevo({
+      to: recipients,
+      subject: `New User Registration Pending Approval - ${safeName}`,
+      htmlContent,
+      textContent,
+      tags: ["user-registration", "pending-approval"],
+    });
+
+    if (result.success) {
+      logger.info("Pending registration email sent to admins", {
+        messageId: result.messageId,
+        adminCount: admins.length,
+        newUserEmail,
+      });
+    } else {
+      logger.error("Failed to send pending registration email to admins", {
+        error: result.error,
+        newUserEmail,
+      });
+    }
+  } catch (error) {
+    logger.error("Error sending pending registration email", {
+      error: error instanceof Error ? error.message : "Unknown error",
+      newUserEmail,
     });
   }
 }

@@ -6,6 +6,7 @@
 
 import { createNotification } from "@/prisma/notification";
 import { logger } from "@/lib/logger";
+import { prisma } from "@/prisma/client";
 import type {
   CreateNotificationInput,
   NotificationType,
@@ -293,4 +294,50 @@ export async function createImportNotification(
     message: `${fileName}: ${message}`,
     metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
   });
+}
+
+/**
+ * Notify all admins that a new user has registered and is pending approval.
+ * Creates one in-app notification per admin user.
+ *
+ * @param newUserName - Name of the newly registered user
+ * @param newUserEmail - Email of the newly registered user
+ */
+export async function notifyAdminsOfPendingRegistration(
+  newUserName: string,
+  newUserEmail: string,
+): Promise<void> {
+  try {
+    const admins = await prisma.user.findMany({
+      where: { role: "admin" },
+      select: { id: true },
+    });
+
+    if (admins.length === 0) {
+      logger.warn("No admin users found to notify about pending registration");
+      return;
+    }
+
+    const notifications = admins.map((admin) =>
+      createInAppNotification({
+        userId: admin.id,
+        type: "user_registration_pending",
+        title: "New user registration pending approval",
+        message: `${newUserName} (${newUserEmail}) has registered and is awaiting admin approval.`,
+        link: "/admin/user-management?status=pending",
+        metadata: { newUserEmail, newUserName },
+      }),
+    );
+
+    await Promise.all(notifications);
+    logger.info("Admins notified of pending registration", {
+      adminCount: admins.length,
+      newUserEmail,
+    });
+  } catch (error) {
+    logger.error("Failed to notify admins of pending registration", {
+      error: error instanceof Error ? error.message : "Unknown error",
+      newUserEmail,
+    });
+  }
 }

@@ -611,7 +611,7 @@ export default function BusinessInsightPage({
         { header: "Additional Info", key: "Additional Info" },
       ];
 
-      exportToCSV(csvData, columns, "stockly-analytics");
+      exportToCSV(csvData, columns, "shelfaware-analytics");
 
       toast({
         title: "CSV Export Successful!",
@@ -675,7 +675,7 @@ export default function BusinessInsightPage({
 
       await exportToExcel({
         sheetName: "Key Metrics",
-        fileName: "stockly-analytics",
+        fileName: "shelfaware-analytics",
         columns: [
           { header: "Metric", key: "Metric", width: 25 },
           { header: "Value", key: "Value", width: 20 },
@@ -1411,7 +1411,7 @@ export default function BusinessInsightPage({
                 </h3>
               </div>
               <QRCodeComponent
-                data={qrUrl || "https://localhost:3000/business-insights"}
+                data={qrUrl || "https://console.shelfaware.my/business-insights"}
                 title="Dashboard QR"
                 size={120}
                 showDownload={false}

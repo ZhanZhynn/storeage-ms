@@ -32,6 +32,7 @@ function transform(
     name: r.name,
     username: r.username,
     role: r.role as UserForAdmin["role"],
+    status: (r.status ?? "approved") as UserForAdmin["status"],
     image: r.image,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt?.toISOString() ?? null,
@@ -217,6 +218,9 @@ export async function PUT(
     const updatePayload: UpdateUserAdminInput = {};
     if (data.role !== undefined) updatePayload.role = data.role;
     if (data.name !== undefined) updatePayload.name = data.name;
+    if ("status" in data && data.status !== undefined) {
+      updatePayload.status = data.status;
+    }
 
     const updated = await updateUserAdmin(id, updatePayload);
 

@@ -36,6 +36,8 @@ import {
   Truck,
   Tag,
   Building2,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { useUser, useUpdateUser, useDeleteUser } from "@/hooks/queries";
 import { useAuth } from "@/contexts";
@@ -137,12 +139,6 @@ function GlassCard({
   );
 }
 
-const PROTECTED_EMAILS = [
-  "test@admin.com",
-  "test@supplier.com",
-  "test@client.com",
-];
-
 function getDisplayUsername(u: UserForAdmin): string {
   if (u.username?.trim()) return u.username.trim();
   const email = u.email ?? "";
@@ -182,10 +178,7 @@ export default function AdminUserManagementDetailContent() {
   const updateMutation = useUpdateUser();
   const deleteMutation = useDeleteUser();
   const isOwner = currentUser?.id != null && currentUser.id === id;
-  const isProtected = user
-    ? PROTECTED_EMAILS.includes((user.email ?? "").toLowerCase())
-    : false;
-  const canDelete = isOwner && !isProtected;
+  const canDelete = isOwner;
 
   const [name, setName] = useState("");
   const [nameTouched, setNameTouched] = useState(false);
@@ -225,6 +218,24 @@ export default function AdminUserManagementDetailContent() {
       },
     });
   }, [id, deleteMutation, router]);
+
+  const handleApprove = useCallback(() => {
+    if (!id) return;
+    updateMutation.mutate(
+      { id, data: { status: "approved", role: "admin" } },
+      {
+        onSuccess: () => {
+          // Refresh the user data to reflect the new status
+          updateMutation.mutate({ id, data: {} });
+        },
+      },
+    );
+  }, [id, updateMutation]);
+
+  const handleReject = useCallback(() => {
+    if (!id) return;
+    updateMutation.mutate({ id, data: { status: "rejected" } });
+  }, [id, updateMutation]);
 
   if (isError || (!isLoading && !user)) {
     return (
@@ -352,37 +363,31 @@ export default function AdminUserManagementDetailContent() {
                   >
                     Name
                   </Label>
-                  {isProtected ? (
-                    <p className="font-medium mt-1 text-gray-900 dark:text-white">
-                      {u.name ?? "—"}
-                    </p>
-                  ) : (
-                    <div className="flex gap-2 mt-1">
-                      <Input
-                        id="um-name"
-                        value={nameValue}
-                        onChange={(e) => {
-                          setName(e.target.value);
-                          setNameTouched(true);
-                        }}
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      id="um-name"
+                      value={nameValue}
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        setNameTouched(true);
+                      }}
+                      disabled={isUpdating}
+                      className="rounded-[28px] border-violet-200/50 dark:border-white/10"
+                    />
+                    {nameTouched && (
+                      <Button
+                        size="sm"
+                        onClick={handleSaveName}
                         disabled={isUpdating}
-                        className="rounded-[28px] border-violet-200/50 dark:border-white/10"
-                      />
-                      {nameTouched && (
-                        <Button
-                          size="sm"
-                          onClick={handleSaveName}
-                          disabled={isUpdating}
-                        >
-                          {isUpdating ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            "Save"
-                          )}
-                        </Button>
-                      )}
-                    </div>
-                  )}
+                      >
+                        {isUpdating ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Save"
+                        )}
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <Label
@@ -413,7 +418,7 @@ export default function AdminUserManagementDetailContent() {
                         key={selectRemountKey}
                         value={u.role ?? "null"}
                         onValueChange={handleRoleChange}
-                        disabled={isUpdating || isProtected}
+                        disabled={isUpdating}
                       >
                         <SelectTrigger
                           id="um-role"
@@ -586,6 +591,59 @@ export default function AdminUserManagementDetailContent() {
                   </p>
                 </div>
               </Link>
+            </div>
+          </GlassCard>
+        )}
+
+        {/* Approval Section - shown only for pending users */}
+        {u.status === "pending" && (
+          <GlassCard variant="amber">
+            <div className="flex items-center gap-3 mb-4">
+              <div
+                className={cn(
+                  "p-2.5 rounded-xl border",
+                  variantConfig.amber.iconBg,
+                  "dark:border-amber-400/30 dark:bg-amber-500/20",
+                )}
+              >
+                <CheckCircle2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Pending Approval
+                </h3>
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  This user has registered and is awaiting admin approval.
+                  Approve to grant admin access, or reject to deny access.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <Button
+                onClick={handleApprove}
+                disabled={isUpdating || isDeleting}
+                className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                {isUpdating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4" />
+                )}
+                Approve User
+              </Button>
+              <Button
+                onClick={handleReject}
+                disabled={isUpdating || isDeleting}
+                variant="destructive"
+                className="gap-2"
+              >
+                {isUpdating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <XCircle className="h-4 w-4" />
+                )}
+                Reject User
+              </Button>
             </div>
           </GlassCard>
         )}

@@ -12,9 +12,12 @@ const userRoleEnum = z.enum([
   "retailer",
 ]);
 
+const userStatusEnum = z.enum(["pending", "approved", "rejected"]);
+
 export const updateUserAdminSchema = z.object({
   role: userRoleEnum.nullable().optional(),
   name: z.string().min(1, "Name is required").max(200).optional(),
+  status: userStatusEnum.optional(),
 });
 
 export const createUserAdminSchema = z.object({

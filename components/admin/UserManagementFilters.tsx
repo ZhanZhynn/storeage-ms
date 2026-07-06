@@ -7,10 +7,9 @@
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Search, Users, Clock } from "lucide-react";
 import { IoClose } from "react-icons/io5";
 import { FilterDropdown } from "@/components/ui/filter-dropdown";
-import { Users } from "lucide-react";
 
 const ROLE_OPTIONS = [
   { id: "user", name: "User" },
@@ -20,11 +19,19 @@ const ROLE_OPTIONS = [
   { id: "retailer", name: "Retailer" },
 ];
 
+const STATUS_OPTIONS = [
+  { id: "pending", name: "Pending" },
+  { id: "approved", name: "Approved" },
+  { id: "rejected", name: "Rejected" },
+];
+
 interface UserManagementFiltersProps {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
   selectedRoles: string[];
   setSelectedRoles: React.Dispatch<React.SetStateAction<string[]>>;
+  selectedStatuses: string[];
+  setSelectedStatuses: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
 export default function UserManagementFilters({
@@ -32,6 +39,8 @@ export default function UserManagementFilters({
   setSearchTerm,
   selectedRoles,
   setSelectedRoles,
+  selectedStatuses,
+  setSelectedStatuses,
 }: UserManagementFiltersProps) {
   return (
     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
@@ -63,6 +72,15 @@ export default function UserManagementFilters({
           label="Role"
           icon={Users}
           triggerClassName="h-10 rounded-[28px] border border-rose-400/30 dark:border-rose-400/30 bg-gradient-to-r from-rose-500/25 via-rose-500/15 to-rose-500/10 dark:from-rose-500/25 dark:via-rose-500/15 dark:to-rose-500/10 text-gray-700 dark:text-white shadow-[0_10px_30px_rgba(225,29,72,0.2)] backdrop-blur-sm transition duration-200 hover:border-rose-300/40 hover:from-rose-500/35 hover:via-rose-500/25 hover:to-rose-500/15 dark:hover:border-rose-300/40 dark:hover:from-rose-500/35 dark:hover:via-rose-500/25 dark:hover:to-rose-500/15 gap-2"
+        />
+        <FilterDropdown
+          selectedValues={selectedStatuses}
+          setSelectedValues={setSelectedStatuses}
+          options={STATUS_OPTIONS}
+          placeholder="Filter by status..."
+          label="Status"
+          icon={Clock}
+          triggerClassName="h-10 rounded-[28px] border border-amber-400/30 dark:border-amber-400/30 bg-gradient-to-r from-amber-500/25 via-amber-500/15 to-amber-500/10 dark:from-amber-500/25 dark:via-amber-500/15 dark:to-amber-500/10 text-gray-700 dark:text-white shadow-[0_10px_30px_rgba(245,158,11,0.2)] backdrop-blur-sm transition duration-200 hover:border-amber-300/40 hover:from-amber-500/35 hover:via-amber-500/25 hover:to-amber-500/15 dark:hover:border-amber-300/40 dark:hover:from-amber-500/35 dark:hover:via-amber-500/25 dark:hover:to-amber-500/15 gap-2"
         />
       </div>
     </div>

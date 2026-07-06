@@ -369,7 +369,7 @@ export default function ApiStatusPage() {
         | undefined;
 
       const status: SystemStatus = {
-        project: "Stockly Inventory Management",
+        project: "ShelfAware Inventory Management",
         environment: healthData.environment,
         currentTime: new Date(healthData.timestamp).toLocaleString(),
         uptime: healthData.uptime,
@@ -455,7 +455,7 @@ export default function ApiStatusPage() {
                 API & Project Status
               </h1>
               <p className="text-sm sm:text-base text-gray-600 dark:text-white/70">
-                Real-time monitoring of Stockly&apos;s API endpoints and system
+                Real-time monitoring of ShelfAware&apos;s API endpoints and system
                 health
               </p>
             </div>

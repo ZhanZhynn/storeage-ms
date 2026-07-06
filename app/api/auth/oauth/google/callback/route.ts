@@ -16,6 +16,20 @@ import { prisma } from "@/prisma/client";
 import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import type { User } from "@prisma/client";
+import { notifyAdminsOfPendingRegistration } from "@/lib/notifications/in-app";
+import { sendPendingRegistrationAdminEmail } from "@/lib/email/notifications";
+import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
+
+/**
+ * Helper to redirect to login with error/pending message and clear OAuth cookies.
+ * Ensures oauth_state and oauth_callback cookies are always cleaned up.
+ */
+function redirectToLogin(request: NextRequest, path: string): NextResponse {
+  const response = NextResponse.redirect(new URL(path, request.url));
+  response.cookies.delete("oauth_state");
+  response.cookies.delete("oauth_callback");
+  return response;
+}
 
 type GoogleOAuthProfile = {
   email: string;
@@ -45,7 +59,8 @@ async function createGoogleOAuthUser(
     password: hashedPassword,
     googleId,
     image: userImage,
-    role: "admin",
+    role: "user",
+    status: "pending",
     username,
     createdAt: new Date(),
   };
@@ -82,7 +97,6 @@ async function updateGoogleOAuthUser(
     googleId?: string;
     image?: string | null;
     name?: string;
-    role?: string;
   } = {};
 
   if (!user.googleId) {
@@ -93,9 +107,6 @@ async function updateGoogleOAuthUser(
   }
   if (name && name !== user.name && !user.name) {
     updateData.name = name;
-  }
-  if (!user.role || (typeof user.role === "string" && user.role.trim() === "")) {
-    updateData.role = "admin";
   }
 
   if (Object.keys(updateData).length === 0) {
@@ -115,10 +126,14 @@ async function updateGoogleOAuthUser(
  */
 export async function GET(request: NextRequest) {
   try {
+    const rateLimitResponse = await withRateLimit(
+      request,
+      defaultRateLimits.auth,
+    );
+    if (rateLimitResponse) return rateLimitResponse;
+
     if (!isGoogleOAuthConfigured()) {
-      return NextResponse.redirect(
-        new URL("/login?error=oauth_not_configured", request.url)
-      );
+      return redirectToLogin(request, "/login?error=oauth_not_configured");
     }
 
     const { searchParams } = new URL(request.url);
@@ -133,24 +148,18 @@ export async function GET(request: NextRequest) {
         // Only log unexpected OAuth errors (e.g. server_error from Google)
         logger.warn("Google OAuth error:", error);
       }
-      return NextResponse.redirect(
-        new URL("/login?error=oauth_failed", request.url)
-      );
+      return redirectToLogin(request, "/login?error=oauth_failed");
     }
 
     // Validate state (CSRF protection)
     const storedState = request.cookies.get("oauth_state")?.value;
     if (!state || !storedState || state !== storedState) {
       logger.error("OAuth state mismatch - possible CSRF attack");
-      return NextResponse.redirect(
-        new URL("/login?error=invalid_state", request.url)
-      );
+      return redirectToLogin(request, "/login?error=invalid_state");
     }
 
     if (!code) {
-      return NextResponse.redirect(
-        new URL("/login?error=no_code", request.url)
-      );
+      return redirectToLogin(request, "/login?error=no_code");
     }
 
     // Exchange authorization code for access token
@@ -179,9 +188,7 @@ export async function GET(request: NextRequest) {
       if (!tokenResponse.ok) {
         const errorData = await tokenResponse.json();
         logger.error("Failed to exchange OAuth code for token:", errorData);
-        return NextResponse.redirect(
-          new URL("/login?error=token_exchange_failed", request.url)
-        );
+        return redirectToLogin(request, "/login?error=token_exchange_failed");
       }
 
       const tokenData = await tokenResponse.json();
@@ -199,9 +206,7 @@ export async function GET(request: NextRequest) {
 
       if (!userInfoResponse.ok) {
         logger.error("Failed to fetch user info from Google");
-        return NextResponse.redirect(
-          new URL("/login?error=fetch_user_failed", request.url)
-        );
+        return redirectToLogin(request, "/login?error=fetch_user_failed");
       }
 
       const googleUser = await userInfoResponse.json();
@@ -211,9 +216,7 @@ export async function GET(request: NextRequest) {
 
       if (!email) {
         logger.error("Google user info missing email");
-        return NextResponse.redirect(
-          new URL("/login?error=no_email", request.url)
-        );
+        return redirectToLogin(request, "/login?error=no_email");
       }
 
       // Map Google's 'picture' field to our 'image' field for consistency
@@ -236,24 +239,37 @@ export async function GET(request: NextRequest) {
         logger.info(`New user created via Google OAuth: ${email}`);
         const { invalidateAllServerCaches } = await import("@/lib/cache");
         await invalidateAllServerCaches().catch(() => {});
+        // Notify admins about the pending registration (non-blocking)
+        notifyAdminsOfPendingRegistration(name || email, email).catch((err) => {
+          logger.warn("Failed to notify admins of pending OAuth registration", { error: err });
+        });
+        sendPendingRegistrationAdminEmail(name || email, email).catch((err) => {
+          logger.warn("Failed to email admins about pending OAuth registration", { error: err });
+        });
       } else {
         user = await updateGoogleOAuthUser(user, profile);
       }
 
       if (!user.id) {
         logger.error("User data corrupted: id missing");
-        return NextResponse.redirect(
-          new URL("/login?error=user_data_error", request.url)
-        );
+        return redirectToLogin(request, "/login?error=user_data_error");
+      }
+
+      // Check account status (approval gate)
+      // Legacy users without status field default to "approved"
+      const userStatus = user.status ?? "approved";
+      if (userStatus === "pending") {
+        return redirectToLogin(request, "/login?pending=1");
+      }
+      if (userStatus === "rejected") {
+        return redirectToLogin(request, "/login?error=rejected");
       }
 
       // Generate JWT token
       const token = generateToken(user.id);
       if (!token) {
         logger.error("Failed to generate token");
-        return NextResponse.redirect(
-          new URL("/login?error=token_generation_failed", request.url)
-        );
+        return redirectToLogin(request, "/login?error=token_generation_failed");
       }
 
       // Redirect to role-appropriate page directly (avoids double-redirect chain through /)
@@ -290,14 +306,10 @@ export async function GET(request: NextRequest) {
       return response;
     } catch (error) {
       logger.error("Error processing Google OAuth callback:", error);
-      return NextResponse.redirect(
-        new URL("/login?error=oauth_processing_failed", request.url)
-      );
+      return redirectToLogin(request, "/login?error=oauth_processing_failed");
     }
   } catch (error) {
     logger.error("Error in Google OAuth callback:", error);
-    return NextResponse.redirect(
-      new URL("/login?error=oauth_error", request.url)
-    );
+    return redirectToLogin(request, "/login?error=oauth_error");
   }
 }

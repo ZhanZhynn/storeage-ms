@@ -11,6 +11,7 @@ import { loginSchema } from "@/lib/validations";
 import { createCorsHeaders, handleCorsPreflight } from "@/lib/api/cors";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/prisma/client";
+import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
 
 /**
  * POST /api/auth/login
@@ -18,6 +19,12 @@ import { prisma } from "@/prisma/client";
  */
 export async function POST(request: NextRequest) {
   try {
+    const rateLimitResponse = await withRateLimit(
+      request,
+      defaultRateLimits.auth,
+    );
+    if (rateLimitResponse) return rateLimitResponse;
+
     // Handle CORS
     const responseHeaders = createCorsHeaders(request);
 
@@ -71,6 +78,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401, headers: responseHeaders },
+      );
+    }
+
+    // Check account status (approval gate)
+    // Legacy users without status field default to "approved"
+    const userStatus = user.status ?? "approved";
+    if (userStatus === "pending") {
+      return NextResponse.json(
+        { error: "Your account is pending admin approval." },
+        { status: 403, headers: responseHeaders },
+      );
+    }
+    if (userStatus === "rejected") {
+      return NextResponse.json(
+        { error: "Your account has not been approved. Contact an admin." },
+        { status: 403, headers: responseHeaders },
       );
     }
 

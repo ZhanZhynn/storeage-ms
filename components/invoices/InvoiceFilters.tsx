@@ -116,7 +116,7 @@ export default function InvoiceFilters({
         { header: "Due Date", key: "Due Date" },
       ];
 
-      exportToCSV(csvData, columns, "stockly-invoices");
+      exportToCSV(csvData, columns, "shelfaware-invoices");
 
       toast({
         title: "CSV Export Successful!",
@@ -162,7 +162,7 @@ export default function InvoiceFilters({
 
       await exportToExcel({
         sheetName: "Invoices",
-        fileName: "stockly-invoices",
+        fileName: "shelfaware-invoices",
         columns: [
           { header: "Invoice Number", key: "Invoice Number", width: 20 },
           { header: "Invoice Date", key: "Invoice Date", width: 12 },

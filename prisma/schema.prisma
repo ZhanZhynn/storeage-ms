@@ -272,6 +272,8 @@ model User {
   image            String? // User profile image URL (from Google OAuth or other sources)
   // Role for access control: user, admin, supplier, client, retailer. Optional for backward compatibility; treat null as "user".
   role             String? // user | admin | supplier | client | retailer
+  // Account status for approval workflow: pending, approved, rejected. Default "approved" for backward compatibility.
+  status           String  @default("approved") // pending | approved | rejected
   // Email notification preferences
   emailPreferences Json? // Email notification preferences stored as JSON
   // Structure: {

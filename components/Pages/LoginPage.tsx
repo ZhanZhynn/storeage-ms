@@ -1,57 +1,29 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { DeferredSelectGate } from "@/components/shared";
 import { useAuth } from "@/contexts";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
-import Image from "next/image";
-import { Shield, Loader2, Store, ShoppingBag, Users } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 /**
- * Test account credentials for quick login (demo / production).
- * Main account: test@admin.com (full privileges). Run scripts/update-demo-user.ts --to admin once to migrate existing test@user.com to test@admin.com. Client/supplier for later.
- */
-const testAccounts = {
-  "guest-user": {
-    email: "test@admin.com",
-    password: "12345678",
-  },
-  "guest-supplier": {
-    email: "test@supplier.com",
-    password: "12345678",
-  },
-  "guest-client": {
-    email: "test@client.com",
-    password: "12345678",
-  },
-};
-
-/**
- * Login page client component (uses useSearchParams for OAuth/redirect).
+ * Login page client component (production-ready, no test accounts or OAuth).
  */
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [selectedRole, setSelectedRole] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [isNavigatingToHome, setIsNavigatingToHome] = useState(false);
   const { login, isLoggedIn, user } = useAuth();
-
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const navigatingFromSubmitRef = useRef(false);
+
+  const isPendingApproval = searchParams.get("pending") === "1";
 
   // Redirect if already logged in (e.g. landed on /login with cookie).
   useEffect(() => {
@@ -66,7 +38,17 @@ export default function LoginPage() {
     }
   }, [isLoggedIn, user]);
 
-  // Handle OAuth errors from callback
+  // Show pending approval message
+  useEffect(() => {
+    if (isPendingApproval) {
+      toast({
+        title: "Account Pending Approval",
+        description: "Your account is awaiting admin approval. You will be notified once approved.",
+      });
+      // Clear the URL param
+      router.replace("/login");
+    }
+  }, [isPendingApproval, toast, router]);
   useEffect(() => {
     const error = searchParams.get("error");
     if (error) {
@@ -97,6 +79,9 @@ export default function LoginPage() {
         case "no_email":
           errorMessage = "Google account email is required. Please try again.";
           break;
+        case "rejected":
+          errorMessage = "Your account has not been approved. Contact an admin.";
+          break;
         case "oauth_processing_failed":
         case "oauth_error":
           errorMessage =
@@ -118,34 +103,13 @@ export default function LoginPage() {
   }, [searchParams, router, toast]);
 
   /**
-   * Handle test account selection from dropdown
-   * Auto-fills email and password fields
-   */
-  const handleRoleSelect = (value: string) => {
-    if (value === "clear") {
-      setSelectedRole("");
-      setEmail("");
-      setPassword("");
-    } else {
-      setSelectedRole(value);
-      const account = testAccounts[value as keyof typeof testAccounts];
-      if (account) {
-        setEmail(account.email);
-        setPassword(account.password);
-      }
-    }
-  };
-
-  /**
    * Handle Google OAuth sign-in
    * Redirects to Google OAuth flow
    */
   const handleGoogleSignIn = async () => {
     try {
-      // Get callback URL from search params or use default
       const redirectUrl = searchParams.get("redirect") || "/";
 
-      // Redirect to OAuth route with callback parameter
       const oauthUrl = `/api/auth/oauth/google?callback=${encodeURIComponent(
         redirectUrl,
       )}`;
@@ -183,7 +147,6 @@ export default function LoginPage() {
 
       setEmail("");
       setPassword("");
-      setSelectedRole("");
 
       // Full-page navigation to the correct dashboard for the user's role.
       // window.location.href bypasses the Next.js RSC cache which can contain
@@ -219,100 +182,7 @@ export default function LoginPage() {
 
       <div className="relative z-10 w-full">
         <div className="flex flex-col lg:flex-row min-h-screen">
-          {/* Left Side - SVG Background & Professional Advertising Cards */}
-          <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center p-8 lg:p-12">
-            <div className="absolute inset-0 opacity-25 dark:opacity-20">
-              <Image
-                src="/stock_inventory.svg"
-                alt="Stock Inventory Illustration"
-                fill
-                className="object-contain"
-                priority
-              />
-            </div>
-            <div className="relative z-10 max-w-2xl w-full space-y-6">
-              {/* Main Welcome Card - Demo guide */}
-              <div className="rounded-[28px] border border-sky-400/30 dark:border-white/10 bg-gradient-to-br from-sky-500/25 via-sky-500/10 to-sky-500/5 dark:from-white/5 dark:via-white/5 dark:to-white/5 backdrop-blur-sm shadow-[0_30px_80px_rgba(2,132,199,0.35)] dark:shadow-lg p-4 sm:p-8">
-                <h1 className="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white mb-3 tracking-tight text-center">
-                  Demo Accounts Guide
-                </h1>
-                <p className="text-md lg:text-lg text-gray-700 dark:text-white/80 font-medium leading-relaxed text-center">
-                  Use the dropdown on the right to sign in as Admin, Client, or
-                  Supplier. All demo accounts use password: 12345678.
-                </p>
-              </div>
-
-              {/* Demo role cards */}
-              <div className="grid grid-cols-2 gap-4">
-                {/* Admin */}
-                <div className="rounded-[20px] border border-sky-400/30 dark:border-white/10 bg-gradient-to-br from-sky-500/25 via-sky-500/10 to-sky-500/5 dark:from-white/5 dark:via-white/5 dark:to-white/5 backdrop-blur-sm shadow-[0_20px_60px_rgba(2,132,199,0.3)] dark:shadow-lg p-4 transition-all hover:shadow-[0_25px_70px_rgba(2,132,199,0.4)] hover:border-sky-300/50 dark:hover:border-sky-300/40">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="rounded-xl border border-sky-400/30 dark:border-sky-400/20 bg-sky-500/20 dark:bg-sky-500/10 backdrop-blur-sm p-2">
-                      <Shield className="h-5 w-5 text-sky-600 dark:text-sky-400" />
-                    </div>
-                    <h3 className="text-md font-semibold text-gray-900 dark:text-white">
-                      Admin
-                    </h3>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-white/70 leading-relaxed">
-                    Full access: products, orders, invoices, warehouses, admin
-                    panel. New user registration creates an admin account.
-                  </p>
-                </div>
-
-                {/* Client */}
-                <div className="rounded-[20px] border border-emerald-400/30 dark:border-white/10 bg-gradient-to-br from-emerald-500/25 via-emerald-500/10 to-emerald-500/5 dark:from-white/5 dark:via-white/5 dark:to-white/5 backdrop-blur-sm shadow-[0_20px_60px_rgba(16,185,129,0.3)] dark:shadow-lg p-4 transition-all hover:shadow-[0_25px_70px_rgba(16,185,129,0.4)] hover:border-emerald-300/50 dark:hover:border-emerald-300/40">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="rounded-xl border border-emerald-400/30 dark:border-emerald-400/20 bg-emerald-500/20 dark:bg-emerald-500/10 backdrop-blur-sm p-2">
-                      <ShoppingBag className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                    </div>
-                    <h3 className="text-md font-semibold text-gray-900 dark:text-white">
-                      Client
-                    </h3>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-white/70 leading-relaxed">
-                    Client portal: catalog, your orders, invoices, place order,
-                    pay with Stripe. Role set via script for showcase only.
-                  </p>
-                </div>
-
-                {/* Supplier */}
-                <div className="rounded-[20px] border border-amber-400/30 dark:border-white/10 bg-gradient-to-br from-amber-500/30 via-amber-500/15 to-amber-500/5 dark:from-white/5 dark:via-white/5 dark:to-white/5 backdrop-blur-sm shadow-[0_20px_60px_rgba(245,158,11,0.25)] dark:shadow-lg p-4 transition-all hover:shadow-[0_25px_70px_rgba(245,158,11,0.35)] hover:border-amber-300/60 dark:hover:border-amber-300/40">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="rounded-xl border border-amber-400/30 dark:border-amber-400/20 bg-amber-500/20 dark:bg-amber-500/10 backdrop-blur-sm p-2">
-                      <Store className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                    </div>
-                    <h3 className="text-md font-semibold text-gray-900 dark:text-white">
-                      Supplier
-                    </h3>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-white/70 leading-relaxed">
-                    Supplier portal: your products, orders, revenue, low stock.
-                    Role and supplier link set via script for showcase only.
-                  </p>
-                </div>
-
-                {/* New accounts & roles */}
-                <div className="rounded-[20px] border border-violet-400/30 dark:border-white/10 bg-gradient-to-br from-violet-500/25 via-violet-500/10 to-violet-500/5 dark:from-white/5 dark:via-white/5 dark:to-white/5 backdrop-blur-sm shadow-[0_20px_60px_rgba(139,92,246,0.35)] dark:shadow-lg p-4 transition-all hover:shadow-[0_25px_70px_rgba(139,92,246,0.45)] hover:border-violet-300/50 dark:hover:border-violet-300/40">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="rounded-xl border border-violet-400/30 dark:border-violet-400/20 bg-violet-500/20 dark:bg-violet-500/10 backdrop-blur-sm p-2">
-                      <Users className="h-5 w-5 text-violet-600 dark:text-violet-400" />
-                    </div>
-                    <h3 className="text-md font-semibold text-gray-900 dark:text-white">
-                      Accounts & Roles
-                    </h3>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-white/70 leading-relaxed">
-                    You cannot create client or supplier accounts at sign-up;
-                    those roles are applied in the DB via script for demo. As
-                    admin, use User Management to view or change user roles.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Side - Login Form */}
+          {/* Right Side - Login Form (centered on mobile, right on desktop) */}
           <div className="w-full lg:w-1/2 flex items-center justify-center p-0 sm:p-8 lg:p-12">
             <div className="w-full max-w-md rounded-[28px] border border-sky-400/30 dark:border-white/10 bg-gradient-to-br from-sky-500/25 via-sky-500/10 to-sky-500/5 dark:from-white/5 dark:via-white/5 dark:to-white/5 backdrop-blur-sm shadow-[0_30px_80px_rgba(2,132,199,0.35)] dark:shadow-lg p-4 sm:p-8 transition-all duration-300 hover:shadow-[0_40px_100px_rgba(2,132,199,0.5)] dark:hover:shadow-[0_40px_100px_rgba(2,132,199,0.4)] hover:border-sky-300/50 dark:hover:border-sky-300/30">
               <div className="space-y-2 mb-6">
@@ -325,68 +195,6 @@ export default function LoginPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4 mb-6">
-                {/* Test account Select — always controlled (value="" when empty) to avoid uncontrolled→controlled warning */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-white/80">
-                    Test Accounts To Login With
-                  </label>
-                  <DeferredSelectGate
-                    placeholder={
-                      <div
-                        className="flex h-11 w-full items-center justify-between rounded-md border border-sky-400/30 dark:border-white/20 bg-white/10 dark:bg-white/5 px-3 py-2.5 text-sm text-gray-500 dark:text-white/40"
-                        aria-hidden
-                      >
-                        Select Role Based Test Account
-                      </div>
-                    }
-                  >
-                    {({ selectRemountKey }) => (
-                    <Select
-                      key={selectRemountKey}
-                      value={selectedRole}
-                      onValueChange={handleRoleSelect}
-                    >
-                      <SelectTrigger className="w-full border-sky-400/30 dark:border-white/20 bg-white/10 dark:bg-white/5 backdrop-blur-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-white/40 focus:border-sky-400 focus:ring-sky-500/50">
-                        <SelectValue placeholder="Select Role Based Test Account" />
-                      </SelectTrigger>
-                      <SelectContent
-                        className="border-sky-400/20 dark:border-white/10 bg-white/80 dark:bg-popover/50 backdrop-blur-sm z-[100]"
-                        position="popper"
-                        sideOffset={5}
-                        align="start"
-                      >
-                        <SelectItem
-                          value="guest-user"
-                          className="cursor-pointer text-gray-900 dark:text-white focus:bg-sky-100 dark:focus:bg-white/10 focus:text-gray-900 dark:focus:text-white"
-                        >
-                          Guest User / Admin (test@admin.com)
-                        </SelectItem>
-                        <SelectItem
-                          value="guest-supplier"
-                          className="cursor-pointer text-gray-900 dark:text-white focus:bg-sky-100 dark:focus:bg-white/10 focus:text-gray-900 dark:focus:text-white"
-                        >
-                          Supplier (test@supplier.com)
-                        </SelectItem>
-                        <SelectItem
-                          value="guest-client"
-                          className="cursor-pointer text-gray-900 dark:text-white focus:bg-sky-100 dark:focus:bg-white/10 focus:text-gray-900 dark:focus:text-white"
-                        >
-                          Client (test@client.com)
-                        </SelectItem>
-                        {selectedRole && (
-                          <SelectItem
-                            value="clear"
-                            className="cursor-pointer text-gray-500 dark:text-white/60 opacity-60 focus:bg-sky-100 dark:focus:bg-white/10 focus:text-gray-500 dark:focus:text-white/60"
-                          >
-                            Clear Selection
-                          </SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-                    )}
-                  </DeferredSelectGate>
-                </div>
-
                 {/* Email Field */}
                 <div className="space-y-2">
                   <label

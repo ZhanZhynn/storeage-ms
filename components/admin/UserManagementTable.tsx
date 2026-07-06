@@ -42,6 +42,7 @@ interface UserManagementTableProps {
     updater: PaginationType | ((old: PaginationType) => PaginationType),
   ) => void;
   selectedRoles: string[];
+  selectedStatuses: string[];
 }
 
 export const UserManagementTable = React.memo(function UserManagementTable({
@@ -52,6 +53,7 @@ export const UserManagementTable = React.memo(function UserManagementTable({
   pagination,
   setPagination,
   selectedRoles,
+  selectedStatuses,
 }: UserManagementTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -66,9 +68,11 @@ export const UserManagementTable = React.memo(function UserManagementTable({
         emailPrefix.toLowerCase().includes(searchTerm.toLowerCase());
       const roleMatch =
         selectedRoles.length === 0 || selectedRoles.includes(u.role ?? "user");
-      return searchMatch && roleMatch;
+      const statusMatch =
+        selectedStatuses.length === 0 || selectedStatuses.includes(u.status ?? "approved");
+      return searchMatch && roleMatch && statusMatch;
     });
-  }, [data, searchTerm, selectedRoles]);
+  }, [data, searchTerm, selectedRoles, selectedStatuses]);
 
   useClampPaginationIndex(filteredData.length, pagination, setPagination);
 

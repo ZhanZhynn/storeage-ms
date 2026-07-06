@@ -43,6 +43,7 @@ export default function UserManagementList({
     pageSize: 8,
   });
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
 
   const columns = useMemo(
     () =>
@@ -124,6 +125,8 @@ export default function UserManagementList({
             setSearchTerm={setSearchTerm}
             selectedRoles={selectedRoles}
             setSelectedRoles={setSelectedRoles}
+            selectedStatuses={selectedStatuses}
+            setSelectedStatuses={setSelectedStatuses}
           />
         </div>
         {isMounted && (
@@ -141,6 +144,7 @@ export default function UserManagementList({
         pagination={pagination}
         setPagination={setPagination}
         selectedRoles={selectedRoles}
+        selectedStatuses={selectedStatuses}
       />
     </div>
   );

@@ -9,7 +9,7 @@ import type { NextRequest } from "next/server";
 /**
  * Production URL
  */
-const PRODUCTION_URL = "http://localhost:3000";
+const PRODUCTION_URL = "https://console.shelfaware.my";
 
 /**
  * Check if an origin is allowed for CORS

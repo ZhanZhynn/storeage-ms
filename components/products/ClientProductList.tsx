@@ -64,8 +64,7 @@ export default function ClientProductList({
 
   useEffect(() => {
     if (admins.length > 0 && !selectedOwnerId) {
-      const defaultAdmin =
-        admins.find((a) => a.email === "test@admin.com") ?? admins[0];
+      const defaultAdmin = admins[0];
       if (defaultAdmin) setSelectedOwnerId(defaultAdmin.id);
     }
   }, [admins, selectedOwnerId]);

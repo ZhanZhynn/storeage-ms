@@ -1,7 +1,8 @@
 /**
  * Register API Route Handler
- * App Router route handler for user registration
- * Migrated from Pages API to App Router
+ * App Router route handler for user registration with admin approval workflow.
+ * New registrations create users with status="pending" and role="user".
+ * Admins must approve before the user can log in.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -10,6 +11,9 @@ import { MongoClient } from "mongodb";
 import { registerSchema } from "@/lib/validations";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/prisma/client";
+import { notifyAdminsOfPendingRegistration } from "@/lib/notifications/in-app";
+import { sendPendingRegistrationAdminEmail } from "@/lib/email/notifications";
+import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
 
 /**
  * Attempt to insert a user document. If a non-sparse unique index on
@@ -50,11 +54,17 @@ async function insertUserWithRetry(
 
 /**
  * POST /api/auth/register
- * Register a new user
+ * Register a new user (pending admin approval)
  */
 export async function POST(request: NextRequest) {
   let mongoClient: MongoClient | null = null;
   try {
+    const rateLimitResponse = await withRateLimit(
+      request,
+      defaultRateLimits.auth,
+    );
+    if (rateLimitResponse) return rateLimitResponse;
+
     const body = await request.json();
 
     const validationResult = registerSchema.safeParse(body);
@@ -67,7 +77,7 @@ export async function POST(request: NextRequest) {
           error: "Invalid request body",
           details: validationResult.error.errors,
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -101,13 +111,14 @@ export async function POST(request: NextRequest) {
       counter++;
     }
 
-    // Insert user (new signups get admin role for full manipulation power)
+    // Insert user with status="pending" and role="user" (awaiting admin approval)
     await insertUserWithRetry(userCollection, {
       name,
       email,
       password: hashedPassword,
       username,
-      role: "admin",
+      role: "user",
+      status: "pending",
       createdAt: new Date(),
     });
 
@@ -126,14 +137,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Invalidate server caches
+    await prisma.user.findMany({ select: { id: true } }).catch(() => {});
     const { invalidateAllServerCaches } = await import("@/lib/cache");
     await invalidateAllServerCaches().catch(() => {});
+
+    // Notify all admins about the pending registration (non-blocking)
+    notifyAdminsOfPendingRegistration(name, email).catch((err) => {
+      logger.warn("Failed to notify admins of pending registration", { error: err });
+    });
+    sendPendingRegistrationAdminEmail(name, email).catch((err) => {
+      logger.warn("Failed to email admins about pending registration", { error: err });
+    });
 
     return NextResponse.json(
       {
         id: createdUser.id,
         name: createdUser.name,
         email: createdUser.email,
+        message: "Account created successfully. Your account is pending admin approval.",
       },
       { status: 201 }
     );

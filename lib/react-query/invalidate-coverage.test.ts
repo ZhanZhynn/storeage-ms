@@ -102,6 +102,8 @@ const DOMAIN_KEYS_REQUIRE_LISTS = [
 const API_WRITE_EXEMPT = new Set([
   "app/api/auth/login/route.ts",
   "app/api/auth/logout/route.ts",
+  "app/api/auth/oauth/google/route.ts",
+  "app/api/auth/oauth/google/callback/route.ts",
   "app/api/ai/insights/route.ts",
   "app/api/chat/route.ts",
   "app/api/shipping/rates/route.ts",

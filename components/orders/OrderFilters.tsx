@@ -127,7 +127,7 @@ export default function OrderFilters({
         { header: "Tracking Number", key: "Tracking Number" },
       ];
 
-      exportToCSV(csvData, columns, "stockly-orders");
+      exportToCSV(csvData, columns, "shelfaware-orders");
 
       toast({
         title: "CSV Export Successful!",
@@ -173,7 +173,7 @@ export default function OrderFilters({
 
       await exportToExcel({
         sheetName: "Orders",
-        fileName: "stockly-orders",
+        fileName: "shelfaware-orders",
         columns: [
           { header: "Order Number", key: "Order Number", width: 20 },
           { header: "Order Date", key: "Order Date", width: 12 },

@@ -3,6 +3,7 @@
  */
 
 export type UserRole = "user" | "admin" | "supplier" | "client" | "retailer";
+export type UserStatus = "pending" | "approved" | "rejected";
 
 export interface UserOverview {
   orderCount: number;
@@ -22,6 +23,7 @@ export interface UserForAdmin {
   name: string;
   username: string | null;
   role: UserRole | null;
+  status: UserStatus;
   image: string | null;
   createdAt: string;
   updatedAt: string | null;
@@ -31,6 +33,7 @@ export interface UserForAdmin {
 export interface UpdateUserAdminInput {
   role?: UserRole | null;
   name?: string;
+  status?: UserStatus;
 }
 
 export interface CreateUserAdminInput {
@@ -43,5 +46,6 @@ export interface CreateUserAdminInput {
 
 export interface UserManagementFilters {
   role?: UserRole | UserRole[];
+  status?: UserStatus;
   search?: string;
 }

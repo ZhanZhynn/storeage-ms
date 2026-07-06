@@ -28,6 +28,7 @@ function transform(
     name: r.name,
     username: r.username,
     role: r.role as UserForAdmin["role"],
+    status: (r.status ?? "approved") as UserForAdmin["status"],
     image: r.image,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt?.toISOString() ?? null,
@@ -54,14 +55,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const cacheKey = cacheKeys.userManagement.list({});
-    const cached = await getCache<UserForAdmin[]>(cacheKey);
-    if (cached) return NextResponse.json(cached);
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get("status") as "pending" | "approved" | "rejected" | null;
 
+    // Only cache when no filters are applied
+    if (!status) {
+      const cacheKey = cacheKeys.userManagement.list({});
+      const cached = await getCache<UserForAdmin[]>(cacheKey);
+      if (cached) return NextResponse.json(cached);
+
+      const records = await getAllUsers();
+      const result = records.map(transform);
+      await setCache(cacheKey, result, 300);
+      return NextResponse.json(result);
+    }
+
+    // With filters, skip cache
     const records = await getAllUsers();
-    const result = records.map(transform);
-    await setCache(cacheKey, result, 300);
-    return NextResponse.json(result);
+    const filtered = records
+      .map(transform)
+      .filter((u) => !status || u.status === status);
+    return NextResponse.json(filtered);
   } catch (error) {
     logger.error("Error fetching users:", error);
     return NextResponse.json(

@@ -37,11 +37,11 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: {
-    default: "Stockly — Warehouse & Stock Inventory Management System",
-    template: "%s | Stockly — Warehouse & Stock Inventory Management System",
+    default: "ShelfAware — Warehouse & Stock Inventory Management System",
+    template: "%s | ShelfAware — Warehouse & Stock Inventory Management System",
   },
   description:
-    "Stockly is a full-stack warehouse and stock inventory management system built with Next.js. Manage products, categories, suppliers, orders, invoices, and warehouses. Role-based access for admin, client, and supplier. Analytics dashboard, QR codes, export, and secure JWT authentication. By Arnob Mahmud.",
+    "ShelfAware is a full-stack warehouse and stock inventory management system built with Next.js. Manage products, categories, suppliers, orders, invoices, and warehouses. Role-based access for admin, client, and supplier. Analytics dashboard, QR codes, export, and secure JWT authentication. By Arnob Mahmud.",
   authors: [
     {
       name: "Arnob Mahmud",
@@ -51,7 +51,7 @@ export const metadata = {
   ],
   creator: "Arnob Mahmud",
   publisher: "Arnob Mahmud",
-  applicationName: "Stockly",
+  applicationName: "ShelfAware",
   keywords: [
     "stock inventory",
     "inventory management",
@@ -76,28 +76,28 @@ export const metadata = {
     other: [{ rel: "icon", url: "/favicon.ico" }],
   },
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL ?? "https://stockly-inventory.vercel.app",
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://console.shelfaware.my",
   ),
   openGraph: {
     type: "website",
     locale: "en_US",
-    title: "Stockly — Warehouse & Stock Inventory Management System",
+    title: "ShelfAware — Warehouse & Stock Inventory Management System",
     description:
-      "Efficiently manage products, orders, invoices, and warehouses with Stockly. Secure, responsive, role-based inventory system. By Arnob Mahmud.",
-    url: "https://stockly-inventory.vercel.app",
-    siteName: "Stockly",
+      "Efficiently manage products, orders, invoices, and warehouses with ShelfAware. Secure, responsive, role-based inventory system. By Arnob Mahmud.",
+    url: "https://console.shelfaware.my",
+    siteName: "ShelfAware",
     images: [
       {
         url: "/favicon.ico",
         width: 32,
         height: 32,
-        alt: "Stockly — Stock Inventory Management",
+        alt: "ShelfAware — Stock Inventory Management",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Stockly — Warehouse & Stock Inventory Management System",
+    title: "ShelfAware — Warehouse & Stock Inventory Management System",
     description:
       "Efficiently manage products, orders, invoices, and warehouses. Secure, responsive inventory system. By Arnob Mahmud.",
     images: ["/favicon.ico"],

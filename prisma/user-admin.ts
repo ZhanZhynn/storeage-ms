@@ -13,6 +13,7 @@ const USER_SELECT = {
   name: true,
   username: true,
   role: true,
+  status: true,
   image: true,
   createdAt: true,
   updatedAt: true,
@@ -34,11 +35,12 @@ export async function getUserById(id: string) {
 }
 
 export async function updateUserAdmin(id: string, data: UpdateUserAdminInput) {
-  const payload: { role?: string | null; name?: string; updatedAt: Date } = {
+  const payload: { role?: string | null; name?: string; status?: string; updatedAt: Date } = {
     updatedAt: new Date(),
   };
   if (data.role !== undefined) payload.role = data.role as string | null;
   if (data.name !== undefined) payload.name = data.name;
+  if (data.status !== undefined) payload.status = data.status;
 
   return prisma.user.update({
     where: { id },
@@ -97,4 +99,35 @@ export async function usernameExists(username: string): Promise<boolean> {
     select: { id: true },
   });
   return !!user;
+}
+
+/**
+ * Approve a pending user registration.
+ * Sets status to "approved" and role to "admin" (default for approved users).
+ */
+export async function approveUser(id: string) {
+  return prisma.user.update({
+    where: { id },
+    data: {
+      status: "approved",
+      role: "admin",
+      updatedAt: new Date(),
+    },
+    select: USER_SELECT,
+  });
+}
+
+/**
+ * Reject a pending user registration.
+ * Sets status to "rejected".
+ */
+export async function rejectUser(id: string) {
+  return prisma.user.update({
+    where: { id },
+    data: {
+      status: "rejected",
+      updatedAt: new Date(),
+    },
+    select: USER_SELECT,
+  });
 }

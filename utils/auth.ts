@@ -67,6 +67,9 @@ export const getSessionServer = async (
   }
 
   const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+  if (!user) return null;
+  const userStatus = user.status ?? "approved";
+  if (userStatus === "pending" || userStatus === "rejected") return null;
   return user;
 };
 
@@ -90,6 +93,9 @@ export const getSessionFromRequest = async (request: {
   }
 
   const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+  if (!user) return null;
+  const userStatus = user.status ?? "approved";
+  if (userStatus === "pending" || userStatus === "rejected") return null;
   return user;
 };
 

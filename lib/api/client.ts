@@ -104,7 +104,7 @@ function createAxiosInstance(): AxiosInstance {
   const instance = axios.create({
     baseURL:
       process.env.NODE_ENV === "production"
-        ? "http://localhost:3000/api"
+        ? "https://console.shelfaware.my/api"
         : "http://localhost:3000/api",
     headers: {
       "Content-Type": "application/json",
