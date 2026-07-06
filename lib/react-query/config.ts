@@ -280,4 +280,44 @@ export const queryKeys = {
     list: (filters?: Record<string, unknown>) =>
       [...queryKeys.auditLogs.lists(), filters] as const,
   },
+
+  // ABC Analysis queries
+  abcAnalysis: {
+    all: ["abcAnalysis"] as const,
+    report: (params?: string) =>
+      [...queryKeys.abcAnalysis.all, "report", params ?? ""] as const,
+  },
+
+  // P&L Report queries
+  pnl: {
+    all: ["pnl"] as const,
+    report: (period?: string) =>
+      [...queryKeys.pnl.all, "report", period ?? ""] as const,
+  },
+
+  // Purchase Orders queries
+  purchaseOrders: {
+    all: ["purchaseOrders"] as const,
+    lists: () => [...queryKeys.purchaseOrders.all, "list"] as const,
+    list: (filters?: Record<string, unknown>) =>
+      [...queryKeys.purchaseOrders.lists(), filters] as const,
+    details: () => [...queryKeys.purchaseOrders.all, "detail"] as const,
+    detail: (id: string) =>
+      [...queryKeys.purchaseOrders.details(), id] as const,
+  },
+
+  // Executive KPI queries
+  executiveKpi: {
+    all: ["executiveKpi"] as const,
+    overview: (params?: string) =>
+      [...queryKeys.executiveKpi.all, "overview", params ?? ""] as const,
+  },
+
+  // Shopee queries
+  shopee: {
+    all: ["shopee"] as const,
+    products: () => [...queryKeys.shopee.all, "products"] as const,
+    mappingStatus: (ids: string[]) =>
+      [...queryKeys.shopee.all, "mappingStatus", ids] as const,
+  },
 } as const;

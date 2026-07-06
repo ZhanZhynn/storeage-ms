@@ -11,6 +11,7 @@ import {
   flexRender,
   type ColumnDef,
   type SortingState,
+  type RowSelectionState,
 } from "@tanstack/react-table";
 import { apiClient } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,18 +19,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, ChevronLeft, ChevronRight, Package } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Package, Plus, Trash2 } from "lucide-react";
+import { useShopeeProductMappingStatus } from "@/hooks/queries";
+import CreateWmsProductDialog from "./CreateWmsProductDialog";
+import BulkCreateWmsProductsDialog from "./BulkCreateWmsProductsDialog";
 
 interface ShopeeProductRow {
   id: string;
   shopeeItemId: number;
   itemName: string;
+  itemSku: string | null;
   price: number;
   originalPrice: number | null;
   stock: number;
   status: string;
   imageUrl: string | null;
   lastSyncedAt: string | null;
+  _count?: { variants: number };
 }
 
 export default function ShopeeProducts() {
@@ -41,6 +47,10 @@ export default function ShopeeProducts() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<ShopeeProductRow | null>(null);
   const limit = 10;
 
   useEffect(() => {
@@ -63,8 +73,54 @@ export default function ShopeeProducts() {
     },
   });
 
+  const productIds = useMemo(
+    () => (data?.products || []).map((p: ShopeeProductRow) => p.id),
+    [data],
+  );
+  const { data: mappingData } = useShopeeProductMappingStatus(productIds);
+
+  const mappingMap = useMemo(() => {
+    const map: Record<string, { isMapped: boolean; variantCount: number; mappedVariantCount: number; wmsProductId?: string }> = {};
+    if (mappingData?.mappings) {
+      for (const m of mappingData.mappings) {
+        map[m.shopeeProductId] = m;
+      }
+    }
+    return map;
+  }, [mappingData]);
+
+  const selectedRowIds = useMemo(() => {
+    return Object.keys(rowSelection).filter((key) => rowSelection[key]);
+  }, [rowSelection]);
+
+  const selectedProducts = useMemo(() => {
+    const allProducts = (data?.products || []) as ShopeeProductRow[];
+    return allProducts.filter((p) => selectedRowIds.includes(p.id));
+  }, [data, selectedRowIds]);
+
   const columns = useMemo<ColumnDef<ShopeeProductRow>[]>(
     () => [
+      {
+        id: "select",
+        header: ({ table }) => (
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-gray-300"
+            checked={table.getIsAllPageRowsSelected()}
+            onChange={(e) => table.toggleAllPageRowsSelected(e.target.checked)}
+          />
+        ),
+        cell: ({ row }) => (
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-gray-300"
+            checked={row.getIsSelected()}
+            onChange={(e) => row.toggleSelected(e.target.checked)}
+          />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+      },
       {
         accessorKey: "imageUrl",
         header: "Image",
@@ -145,8 +201,41 @@ export default function ShopeeProducts() {
           </span>
         ),
       },
+      {
+        id: "actions",
+        header: "WMS",
+        cell: ({ row }) => {
+          const product = row.original;
+          const mapping = mappingMap[product.id];
+          if (mapping?.isMapped) {
+            return (
+              <a
+                href={`/admin/products/${mapping.wmsProductId}`}
+                className="text-xs text-primary hover:underline"
+              >
+                Linked
+              </a>
+            );
+          }
+          return (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => {
+                setSelectedProduct(product);
+                setDialogOpen(true);
+              }}
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Create
+            </Button>
+          );
+        },
+        enableSorting: false,
+      },
     ],
-    [],
+    [mappingMap, data],
   );
 
   const tableData = useMemo(() => (data?.products || []) as ShopeeProductRow[], [data]);
@@ -158,7 +247,9 @@ export default function ShopeeProducts() {
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
-    state: { sorting },
+    onRowSelectionChange: setRowSelection,
+    state: { sorting, rowSelection },
+    getRowId: (row) => row.id,
   });
 
   const totalPages = data ? Math.ceil(data.total / limit) : 0;
@@ -178,20 +269,40 @@ export default function ShopeeProducts() {
         <h1 className="text-2xl font-bold">Shopee Products</h1>
       </div>
 
-      {/* Search */}
+      {/* Search + Bulk Actions */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search products..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); setRowSelection({}); }}
             className="pl-9"
           />
         </div>
         <span className="text-sm text-muted-foreground">
           {data?.total || 0} products
         </span>
+        {selectedRowIds.length > 0 && (
+          <div className="flex items-center gap-2 ml-auto">
+            <Badge variant="secondary">{selectedRowIds.length} selected</Badge>
+            <Button
+              size="sm"
+              onClick={() => setBulkDialogOpen(true)}
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Create WMS Products
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRowSelection({})}
+            >
+              <Trash2 className="h-3 w-3 mr-1" />
+              Clear
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Table */}
@@ -272,6 +383,38 @@ export default function ShopeeProducts() {
             </Button>
           </div>
         </div>
+      )}
+
+      {/* Single Create Dialog */}
+      {selectedProduct && (
+        <CreateWmsProductDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          shopeeProduct={{
+            id: selectedProduct.id,
+            shopeeItemId: selectedProduct.shopeeItemId,
+            itemName: selectedProduct.itemName,
+            itemSku: selectedProduct.itemSku,
+            price: selectedProduct.price,
+            stock: selectedProduct.stock,
+            imageUrl: selectedProduct.imageUrl,
+            variantCount: selectedProduct._count?.variants,
+          }}
+          existingWmsProductId={mappingMap[selectedProduct.id]?.wmsProductId}
+        />
+      )}
+
+      {/* Bulk Create Dialog */}
+      {bulkDialogOpen && (
+        <BulkCreateWmsProductsDialog
+          open={bulkDialogOpen}
+          onOpenChange={setBulkDialogOpen}
+          products={selectedProducts}
+          onComplete={() => {
+            setRowSelection({});
+            setBulkDialogOpen(false);
+          }}
+        />
       )}
     </div>
   );

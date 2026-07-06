@@ -25,6 +25,10 @@ import {
   Upload,
   Bell,
   RotateCcw,
+  BarChart3,
+  ClipboardList,
+  Gauge,
+  Receipt,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts";
@@ -59,6 +63,11 @@ const MY_STORE_ITEMS: NavItem[] = [
     href: "/admin/dashboard-overall-insights",
     label: "Store Overview",
     icon: LayoutDashboard,
+  },
+  {
+    href: "/admin/executive-kpi",
+    label: "Executive KPI",
+    icon: Gauge,
   },
   {
     href: "/admin/orders",
@@ -100,6 +109,11 @@ const MANAGEMENT_ITEMS: NavItem[] = [
     countKey: "warehouses",
   },
   {
+    href: "/admin/purchase-orders",
+    label: "Purchase Orders",
+    icon: ClipboardList,
+  },
+  {
     href: "/admin/supplier-portal",
     label: "Supplier Portal",
     icon: Truck,
@@ -122,6 +136,11 @@ const MANAGEMENT_ITEMS: NavItem[] = [
     label: "Activity History",
     icon: History,
   },
+  {
+    href: "/admin/inventory/abc-analysis",
+    label: "ABC Analysis",
+    icon: BarChart3,
+  },
 ];
 
 const MY_ACTIVITY_ITEMS: NavItem[] = [
@@ -129,6 +148,14 @@ const MY_ACTIVITY_ITEMS: NavItem[] = [
     href: "/admin/my-activity",
     label: "My activity",
     icon: UserCircle,
+  },
+];
+
+const FINANCIALS_ITEMS: NavItem[] = [
+  {
+    href: "/admin/financials/pnl",
+    label: "P&L Report",
+    icon: Receipt,
   },
 ];
 
@@ -238,6 +265,8 @@ export default function AdminSidebar({ collapsed = false }: { collapsed?: boolea
         <div className="w-6 border-t border-gray-200/50 dark:border-white/10 my-1" />
         {renderNavItems(SHOPEE_ITEMS)}
         <div className="w-6 border-t border-gray-200/50 dark:border-white/10 my-1" />
+        {renderNavItems(FINANCIALS_ITEMS)}
+        <div className="w-6 border-t border-gray-200/50 dark:border-white/10 my-1" />
         {renderNavItems(MY_ACTIVITY_ITEMS)}
         <div className="w-6 border-t border-gray-200/50 dark:border-white/10 my-1" />
         <Link
@@ -270,6 +299,12 @@ export default function AdminSidebar({ collapsed = false }: { collapsed?: boolea
         Shopee
       </p>
       {renderNavItems(SHOPEE_ITEMS)}
+
+      {/* Financials */}
+      <p className="px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        Financials
+      </p>
+      {renderNavItems(FINANCIALS_ITEMS)}
 
       {/* My Activity */}
       <p className="px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">

@@ -352,6 +352,46 @@ export const cacheKeys = {
   },
 
   /**
+   * ABC Analysis cache keys
+   */
+  abcAnalysis: {
+    report: (userId: string, params?: string) =>
+      `abc-analysis:${userId}:${params || "default"}`,
+    pattern: "abc-analysis:*",
+  },
+
+  /**
+   * P&L Report cache keys
+   */
+  pnl: {
+    report: (userId: string, period?: string) =>
+      `pnl:${userId}:${period || "default"}`,
+    pattern: "pnl:*",
+  },
+
+  /**
+   * Purchase Orders cache keys
+   */
+  purchaseOrders: {
+    all: "purchaseOrders:all",
+    list: (filters?: Record<string, unknown>) => {
+      const filterStr = filters ? JSON.stringify(filters) : "default";
+      return `purchaseOrders:list:${filterStr}`;
+    },
+    detail: (id: string) => `purchaseOrders:detail:${id}`,
+    pattern: "purchaseOrders:*",
+  },
+
+  /**
+   * Executive KPI cache keys
+   */
+  executiveKpi: {
+    overview: (userId: string, params?: string) =>
+      `executive-kpi:${userId}:${params || "default"}`,
+    pattern: "executive-kpi:*",
+  },
+
+  /**
    * Shopee integration cache keys
    */
   shopee: {
@@ -411,6 +451,10 @@ export async function invalidateAllServerCaches(): Promise<void> {
     invalidateCache(cacheKeys.shopee.pattern),
     invalidateCache("forecasting:*"),
     invalidateCache("system-config:*"),
+    invalidateCache(cacheKeys.abcAnalysis.pattern),
+    invalidateCache(cacheKeys.pnl.pattern),
+    invalidateCache(cacheKeys.purchaseOrders.pattern),
+    invalidateCache(cacheKeys.executiveKpi.pattern),
   ]);
 }
 

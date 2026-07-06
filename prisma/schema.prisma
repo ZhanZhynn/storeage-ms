@@ -141,8 +141,24 @@ model Product {
   deletedAt        DateTime?   @db.Date // Soft-delete: set when product has order history and is "deleted"
   deletedBy        String?     @db.ObjectId // User who soft-deleted the product
   orderItems       OrderItem[] // Orders containing this product (one-to-many relationship)
+  channelMappings  ProductChannelMapping[] // Channel links (Shopee, etc.)
 
   @@index([deletedAt])
+}
+
+model ProductChannelMapping {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  wmsProductId    String   @db.ObjectId
+  channel         String // "shopee", "lazada", etc.
+  channelProductId String  @db.ObjectId // FK to ShopeeProduct or ShopeeProductVariant
+  channelType     String // "product" or "variant"
+  createdAt       DateTime @default(now())
+
+  wmsProduct Product @relation(fields: [wmsProductId], references: [id], onDelete: Cascade)
+
+  @@unique([wmsProductId, channel, channelProductId])
+  @@index([channelProductId])
+  @@index([wmsProductId])
 }
 
 model Session {
@@ -205,16 +221,17 @@ model Warehouse {
 }
 
 model Supplier {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  userId      String    @db.ObjectId // Created by user ID
-  status      Boolean   @default(true) // Active/Inactive status (default: active)
-  description String? // Optional description field
-  notes       String? // Optional notes field
-  createdAt   DateTime  @default(now()) @db.Date
-  updatedAt   DateTime? @db.Date // Manually managed - null on create, set on update
-  createdBy   String    @db.ObjectId // Same as userId, for clarity
-  updatedBy   String?   @db.ObjectId // Last updated by user ID
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  userId        String    @db.ObjectId // Created by user ID
+  status        Boolean   @default(true) // Active/Inactive status (default: active)
+  description   String? // Optional description field
+  notes         String? // Optional notes field
+  createdAt     DateTime  @default(now()) @db.Date
+  updatedAt     DateTime? @db.Date // Manually managed - null on create, set on update
+  createdBy     String    @db.ObjectId // Same as userId, for clarity
+  updatedBy     String?   @db.ObjectId // Last updated by user ID
+  purchaseOrders PurchaseOrder[]
 }
 
 model User {
@@ -626,4 +643,46 @@ model NotificationSetting {
   updatedAt          DateTime? @updatedAt @db.Date
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PurchaseOrder {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  poNumber      String    @unique
+  supplierId    String    @db.ObjectId
+  userId        String    @db.ObjectId
+  status        String    @default("draft") // draft, pending_approval, approved, rejected, ordered, received, cancelled
+  totalAmount   Float     @default(0)
+  notes         String?
+  approvedBy    String?   @db.ObjectId
+  approvedAt    DateTime? @db.Date
+  orderedAt     DateTime? @db.Date
+  receivedAt    DateTime? @db.Date
+  cancelledAt   DateTime? @db.Date
+  createdAt     DateTime  @default(now()) @db.Date
+  updatedAt     DateTime? @db.Date
+  createdBy     String    @db.ObjectId
+  updatedBy     String?   @db.ObjectId
+  supplier      Supplier  @relation(fields: [supplierId], references: [id])
+  items         PurchaseOrderItem[]
+
+  @@index([userId])
+  @@index([supplierId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model PurchaseOrderItem {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  purchaseOrderId String        @db.ObjectId
+  productId       String        @db.ObjectId
+  productName     String
+  sku             String?
+  quantity        Int
+  unitCost        Float
+  subtotal        Float
+  createdAt       DateTime      @default(now()) @db.Date
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  @@index([purchaseOrderId])
+  @@index([productId])
 }

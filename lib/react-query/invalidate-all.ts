@@ -49,6 +49,10 @@ export function invalidateAllRelatedQueries(queryClient: QueryClient): void {
   queryClient.invalidateQueries({ queryKey: queryKeys.systemConfig.all() });
   queryClient.invalidateQueries({ queryKey: queryKeys.user.all });
   queryClient.invalidateQueries({ queryKey: queryKeys.auth.all });
+  queryClient.invalidateQueries({ queryKey: queryKeys.abcAnalysis.all });
+  queryClient.invalidateQueries({ queryKey: queryKeys.pnl.all });
+  queryClient.invalidateQueries({ queryKey: queryKeys.purchaseOrders.all });
+  queryClient.invalidateQueries({ queryKey: queryKeys.executiveKpi.all });
 }
 
 /**

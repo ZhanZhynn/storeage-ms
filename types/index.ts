@@ -238,6 +238,47 @@ export type {
   AuditLogFilters,
 } from "./audit-log";
 
+// ABC Analysis types
+export type {
+  AbcTier,
+  AbcProduct,
+  AbcTierSummary,
+  AbcRecommendations,
+  AbcParetoPoint,
+  AbcAnalysisData,
+} from "./abc-analysis";
+
+// P&L types
+export type {
+  PnlData,
+  PnlReport,
+} from "./pnl";
+
+// Purchase Order types
+export type {
+  PurchaseOrderStatus,
+  PurchaseOrder,
+  PurchaseOrderItem,
+  CreatePurchaseOrderInput,
+  UpdatePurchaseOrderInput,
+} from "./purchase-order";
+
+// Executive KPI types
+export type {
+  KpiMetric,
+  ExecutiveKpiData,
+} from "./executive-kpi";
+
+// Product Channel Mapping types
+export type {
+  ChannelType,
+  ProductChannelType,
+  ProductChannelMapping,
+  CreateWmsProductFromShopeeInput,
+  CreateWmsProductFromShopeeResponse,
+  ShopeeProductMappingStatus,
+} from "./product-channel-mapping";
+
 // API types (AdminCounts for admin sidebar counts)
 export type {
   AdminCounts,

@@ -140,6 +140,33 @@ export { useAuditLogs } from "./use-audit-logs";
 // Forecasting hooks
 export { useForecastingSummary } from "./use-forecasting";
 
+// ABC Analysis hooks
+export { useAbcAnalysis } from "./use-abc-analysis";
+
+// P&L hooks
+export { usePnl } from "./use-pnl";
+
+// Purchase Orders hooks
+export {
+  usePurchaseOrders,
+  usePurchaseOrder,
+  useCreatePurchaseOrder,
+  useUpdatePurchaseOrder,
+  useDeletePurchaseOrder,
+  useApprovePurchaseOrder,
+  useGeneratePurchaseOrders,
+} from "./use-purchase-orders";
+
+// Executive KPI hooks
+export { useExecutiveKpi } from "./use-executive-kpi";
+
+// Shopee Product Mapping hooks
+export {
+  useShopeeProductMappingStatus,
+  useCreateWmsProductFromShopee,
+  useBulkCreateWmsProducts,
+} from "./use-shopee-product-mapping";
+
 // Portal hooks (external supplier/client portals)
 export {
   useSupplierPortalDashboard,

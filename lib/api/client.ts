@@ -956,6 +956,176 @@ class ApiClient {
   };
 
   /**
+   * ABC Analysis API methods
+   */
+  abcAnalysis = {
+    get: async (params?: {
+      dateFrom?: string;
+      dateTo?: string;
+      channel?: string;
+    }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.dateFrom) searchParams.set("dateFrom", params.dateFrom);
+      if (params?.dateTo) searchParams.set("dateTo", params.dateTo);
+      if (params?.channel) searchParams.set("channel", params.channel);
+      const qs = searchParams.toString();
+      const url = qs
+        ? `${API_ENDPOINTS.inventory.abcAnalysis}?${qs}`
+        : API_ENDPOINTS.inventory.abcAnalysis;
+      const response = await this.client.get(url);
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+  };
+
+  /**
+   * P&L Report API methods
+   */
+  financials = {
+    getPnl: async (params?: {
+      period?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.period) searchParams.set("period", params.period);
+      if (params?.dateFrom) searchParams.set("dateFrom", params.dateFrom);
+      if (params?.dateTo) searchParams.set("dateTo", params.dateTo);
+      const qs = searchParams.toString();
+      const url = qs
+        ? `${API_ENDPOINTS.financials.pnl}?${qs}`
+        : API_ENDPOINTS.financials.pnl;
+      const response = await this.client.get(url);
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+  };
+
+  /**
+   * Purchase Orders API methods
+   */
+  purchaseOrders = {
+    getAll: async (params?: {
+      status?: string;
+      supplierId?: string;
+    }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.status) searchParams.set("status", params.status);
+      if (params?.supplierId) searchParams.set("supplierId", params.supplierId);
+      const qs = searchParams.toString();
+      const url = qs
+        ? `${API_ENDPOINTS.purchaseOrders.base}?${qs}`
+        : API_ENDPOINTS.purchaseOrders.base;
+      const response = await this.client.get(url);
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+
+    getById: async (id: string) => {
+      const response = await this.client.get(
+        API_ENDPOINTS.purchaseOrders.detail(id),
+      );
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+
+    create: async (data: Record<string, unknown>) => {
+      const response = await this.client.post(
+        API_ENDPOINTS.purchaseOrders.base,
+        data,
+      );
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+
+    update: async (id: string, data: Record<string, unknown>) => {
+      const response = await this.client.put(
+        API_ENDPOINTS.purchaseOrders.detail(id),
+        data,
+      );
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+
+    delete: async (id: string) => {
+      const response = await this.client.delete(
+        API_ENDPOINTS.purchaseOrders.detail(id),
+      );
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+
+    approve: async (id: string, data: { action: "approve" | "reject" }) => {
+      const response = await this.client.post(
+        API_ENDPOINTS.purchaseOrders.approve(id),
+        data,
+      );
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+
+    generate: async () => {
+      const response = await this.client.post(
+        API_ENDPOINTS.purchaseOrders.generate,
+        {},
+      );
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+  };
+
+  /**
+   * Executive KPI API methods
+   */
+  executiveKpi = {
+    get: async (params?: {
+      dateFrom?: string;
+      dateTo?: string;
+    }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.dateFrom) searchParams.set("dateFrom", params.dateFrom);
+      if (params?.dateTo) searchParams.set("dateTo", params.dateTo);
+      const qs = searchParams.toString();
+      const url = qs
+        ? `${API_ENDPOINTS.executiveKpi.base}?${qs}`
+        : API_ENDPOINTS.executiveKpi.base;
+      const response = await this.client.get(url);
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+  };
+
+  /**
    * Portal API methods (external supplier/client portals)
    */
   portal = {
@@ -2174,6 +2344,60 @@ class ApiClient {
       if (shopId) searchParams.set("shopId", shopId);
       const response = await this.client.get(
         `${API_ENDPOINTS.shopee.nearSlaOrders}?${searchParams.toString()}`,
+      );
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+
+    /**
+     * Create WMS product from Shopee listing
+     */
+    createWmsProduct: async (data: {
+      shopeeProductId: string;
+      categoryId: string;
+      supplierId: string;
+    }) => {
+      const response = await this.client.post(
+        API_ENDPOINTS.shopee.createWmsProduct,
+        data,
+      );
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+
+    /**
+     * Check mapping status for Shopee products
+     */
+    getMappingStatus: async (shopeeProductIds: string[]) => {
+      const params = new URLSearchParams();
+      params.set("ids", shopeeProductIds.join(","));
+      const response = await this.client.get(
+        `${API_ENDPOINTS.shopee.createWmsProduct}?${params.toString()}`,
+      );
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+
+    /**
+     * Bulk create WMS products from Shopee listings
+     */
+    bulkCreateWmsProducts: async (data: {
+      shopeeProductIds: string[];
+      categoryId: string;
+      supplierId: string;
+    }) => {
+      const response = await this.client.post(
+        API_ENDPOINTS.shopee.createWmsProduct,
+        data,
       );
       return {
         data: response.data,

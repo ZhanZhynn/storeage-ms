@@ -109,6 +109,29 @@ export const API_ENDPOINTS = {
     base: "/forecasting",
   },
 
+  // Inventory (ABC Analysis)
+  inventory: {
+    abcAnalysis: "/inventory/abc-analysis",
+  },
+
+  // Financials (P&L)
+  financials: {
+    pnl: "/financials/pnl",
+  },
+
+  // Purchase Orders
+  purchaseOrders: {
+    base: "/purchase-orders",
+    detail: (id: string) => `/purchase-orders/${id}`,
+    approve: (id: string) => `/purchase-orders/${id}/approve`,
+    generate: "/purchase-orders/generate",
+  },
+
+  // Executive KPI
+  executiveKpi: {
+    base: "/executive-kpi",
+  },
+
   // External Portals
   portal: {
     supplier: "/portal/supplier",
@@ -165,6 +188,7 @@ export const API_ENDPOINTS = {
     clv: "/shopee/stats/clv",
     returns: "/shopee/returns",
     returnsStats: "/shopee/stats/returns",
+    createWmsProduct: "/shopee/products/create-wms-product",
   },
 
   // Notification settings
