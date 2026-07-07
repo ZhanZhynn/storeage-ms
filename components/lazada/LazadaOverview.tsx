@@ -13,6 +13,7 @@ import {
   Package,
   ShoppingCart,
   History,
+  KeyRound,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -148,6 +149,15 @@ export default function LazadaOverview() {
                   >
                     <RefreshCw className={`mr-1 h-3 w-3 ${syncMutation.isPending ? "animate-spin" : ""}`} />
                     Sync
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleConnect}
+                    title="Re-authorize tokens"
+                  >
+                    <KeyRound className="mr-1 h-3 w-3" />
+                    Re-authorize
                   </Button>
                   <Button size="sm" variant="ghost" asChild>
                     <Link href={`/admin/lazada/products?sellerId=${shop.sellerId}`}>

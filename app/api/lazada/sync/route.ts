@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/utils/auth";
-import { setActiveSeller, syncLazadaProducts, syncLazadaOrders, syncLazadaAll, isSellerSyncing } from "@/lib/lazada";
+import { setActiveSeller, syncLazadaProducts, syncLazadaOrders, syncLazadaAll, isSellerSyncing, validateLazadaToken } from "@/lib/lazada";
 import { lazadaSyncBodySchema } from "@/lib/validations/lazada";
 import prisma from "@/prisma/client";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
@@ -60,6 +60,19 @@ export async function POST(request: NextRequest) {
     );
 
     setActiveSeller(sellerId);
+
+    // Pre-flight token check — fail fast with a clear message
+    const tokenStatus = await validateLazadaToken();
+    if (!tokenStatus.valid) {
+      return NextResponse.json(
+        {
+          error: "Lazada token is invalid or expired",
+          details: tokenStatus.error,
+          action: "Please re-authorize the seller by connecting again.",
+        },
+        { status: 401 },
+      );
+    }
 
     let result: {
       products?: { synced: number; created: number; updated: number; errors: string[] };

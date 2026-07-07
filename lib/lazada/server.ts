@@ -189,6 +189,62 @@ export async function getLazadaSDK(): Promise<LazadaModule> {
 }
 
 /**
+ * Validate that the current token can successfully call the Lazada API.
+ * Makes a direct HTTP call to a lightweight endpoint (seller info) to verify auth.
+ * This catches errors that the SDK silently swallows.
+ */
+export async function validateLazadaToken(): Promise<{ valid: boolean; error?: string }> {
+  try {
+    const config = await buildConfig();
+    if (!config.appAccessToken) {
+      return { valid: false, error: "No access token available" };
+    }
+
+    const appSecret = config.appSecret;
+    const path = "/products/get";
+
+    // Build a minimal signed request to test the token
+    const crypto = await import("crypto");
+    const timestamp = Date.now();
+    const params: Record<string, string> = {
+      app_key: config.appKey,
+      timestamp: String(timestamp),
+      sign_method: "sha256",
+      access_token: config.appAccessToken,
+      limit: "1",
+      offset: "0",
+    };
+
+    // Sort params and create sign string
+    const sortedKeys = Object.keys(params).sort();
+    const signString = sortedKeys.map((k) => `${k}${params[k]}`).join("");
+    const sign = crypto
+      .createHmac("sha256", appSecret)
+      .update(signString)
+      .digest("hex")
+      .toUpperCase();
+
+    const queryString = sortedKeys.map((k) => `${k}=${encodeURIComponent(params[k] ?? "")}`).join("&");
+    const url = `https://api.lazada.vn/rest${path}?${queryString}&sign=${sign}`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.code === "0" || data.code === 0) {
+      return { valid: true };
+    }
+
+    const errorMsg = data.msg || data.message || `API error code: ${data.code}`;
+    logger.warn(`[Lazada] Token validation failed: ${errorMsg}`);
+    return { valid: false, error: errorMsg };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    logger.warn(`[Lazada] Token validation request failed: ${msg}`);
+    return { valid: false, error: msg };
+  }
+}
+
+/**
  * Check if Lazada is configured (non-throwing guard for API routes).
  */
 export function isLazadaConfigured(): boolean {

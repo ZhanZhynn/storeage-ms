@@ -5,7 +5,7 @@
  * Uses runWithSyncLog for generic sync log lifecycle.
  */
 
-import { getLazadaSDK, setActiveSeller } from "./server";
+import { getLazadaSDK, setActiveSeller, validateLazadaToken } from "./server";
 import prisma from "@/prisma/client";
 import { Prisma } from "@prisma/client";
 import { logger } from "@/lib/logger";
@@ -100,8 +100,27 @@ export async function syncLazadaProducts(
       let created = 0;
       let updated = 0;
 
+      // Validate token before attempting API calls
+      const tokenCheck = await validateLazadaToken();
+      if (!tokenCheck.valid) {
+        throw new Error(
+          `Lazada token is invalid or expired: ${tokenCheck.error}. ` +
+          `Please re-authorize the seller by connecting again.`
+        );
+      }
+
       // Fetch all products (auto-paginated by SDK)
       const products = await withLazadaRetry(() => sdk.getProducts());
+
+      // Detect silent SDK failure: token is valid but got empty results
+      // where we'd expect at least some products (only log, don't throw —
+      // seller may genuinely have 0 products)
+      if (products.length === 0) {
+        logger.info(
+          `[Lazada Sync] getProducts returned 0 results for seller ${sellerId}. ` +
+          `Token is valid — seller may genuinely have no products, or the API returned an empty page.`
+        );
+      }
 
       for (const product of products) {
         try {
@@ -202,6 +221,15 @@ export async function syncLazadaOrders(
       let synced = 0;
       let created = 0;
       let updated = 0;
+
+      // Validate token before attempting API calls
+      const tokenCheck = await validateLazadaToken();
+      if (!tokenCheck.valid) {
+        throw new Error(
+          `Lazada token is invalid or expired: ${tokenCheck.error}. ` +
+          `Please re-authorize the seller by connecting again.`
+        );
+      }
 
       // Default to last 15 days if no date specified
       const after = createdAfter || (() => {

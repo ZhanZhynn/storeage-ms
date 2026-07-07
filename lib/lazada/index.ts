@@ -10,6 +10,7 @@ export {
   persistTokens,
   getLazadaAuthUrl,
   exchangeLazadaCodeForToken,
+  validateLazadaToken,
   LAZADA_URLS,
 } from "./server";
 export {
