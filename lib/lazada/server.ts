@@ -52,7 +52,11 @@ export function patchLazadaSDKEndpoint(countryCode: string): void {
     "node_modules/lazada-api-client/dist/module/lazada/common/constant.js",
   );
   const constant = _require(constantPath) as { LZD_END_POINT: string };
+  const prev = constant.LZD_END_POINT;
   constant.LZD_END_POINT = getLazadaEndpoint(countryCode);
+  logger.info(
+    `[Lazada] Patched SDK endpoint: ${prev} → ${constant.LZD_END_POINT} (countryCode: ${countryCode})`,
+  );
 }
 
 // Lazy initialization

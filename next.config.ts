@@ -7,6 +7,7 @@ module.exports = {
 };
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  serverExternalPackages: ["lazada-api-client"],
 
   images: {
     remotePatterns: [

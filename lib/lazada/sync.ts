@@ -109,8 +109,39 @@ export async function syncLazadaProducts(
         );
       }
 
-      // Fetch all products (auto-paginated by SDK)
-      const products = await withLazadaRetry(() => sdk.getProducts());
+      // Diagnostic: verify the SDK is hitting the correct endpoint
+      // eslint-disable-next-line no-eval
+      const _require = eval("require") as NodeRequire;
+      const { join } = _require("node:path") as typeof import("node:path");
+      const constantPath = join(
+        process.cwd(),
+        "node_modules/lazada-api-client/dist/module/lazada/common/constant.js",
+      );
+      const constant = _require(constantPath) as { LZD_END_POINT: string };
+      logger.info(
+        `[Lazada Sync] SDK endpoint at call time: ${constant.LZD_END_POINT}`,
+      );
+
+      // Capture SDK-internal console.log errors (SDK silently swallows them)
+      const origConsoleLog = console.log;
+      const sdkErrors: string[] = [];
+      console.log = (...args: unknown[]) => {
+        sdkErrors.push(args.map(String).join(" "));
+      };
+
+      let products: Awaited<ReturnType<typeof sdk.getProducts>>;
+      try {
+        // Fetch all products (auto-paginated by SDK)
+        products = await withLazadaRetry(() => sdk.getProducts());
+      } finally {
+        console.log = origConsoleLog;
+      }
+
+      if (sdkErrors.length > 0) {
+        logger.warn(
+          `[Lazada Sync] SDK internal errors captured: ${sdkErrors.join(" | ")}`,
+        );
+      }
 
       // Detect silent SDK failure: token is valid but got empty results
       // where we'd expect at least some products (only log, don't throw —
@@ -230,6 +261,19 @@ export async function syncLazadaOrders(
           `Please re-authorize the seller by connecting again.`
         );
       }
+
+      // Diagnostic: verify the SDK is hitting the correct endpoint
+      // eslint-disable-next-line no-eval
+      const _require = eval("require") as NodeRequire;
+      const { join } = _require("node:path") as typeof import("node:path");
+      const constantPath = join(
+        process.cwd(),
+        "node_modules/lazada-api-client/dist/module/lazada/common/constant.js",
+      );
+      const constant = _require(constantPath) as { LZD_END_POINT: string };
+      logger.info(
+        `[Lazada Sync] SDK endpoint at order-sync call time: ${constant.LZD_END_POINT}`,
+      );
 
       // Default to last 15 days if no date specified
       const after = createdAfter || (() => {
