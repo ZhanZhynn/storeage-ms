@@ -1,6 +1,7 @@
 /**
- * Server-side data fetching for combined WMS + Shopee orders.
- * Normalizes both sources into a unified shape for Business Insights charts.
+ * Server-side data fetching for combined WMS + Shopee insights.
+ * Normalizes orders into a unified shape and aggregates Shopee-specific
+ * metrics for Business Insights charts.
  * Only import from server code.
  */
 
@@ -24,17 +25,37 @@ export type CombinedOrder = {
   items: CombinedOrderItem[];
 };
 
+/** Shopee product listing stats */
+export type ShopeeProductStats = {
+  total: number;
+  byStatus: Record<string, number>;
+};
+
+/** Top Shopee product by revenue */
+export type ShopeeTopProduct = {
+  productName: string;
+  revenue: number;
+  quantity: number;
+};
+
+/** Combined insights — orders + Shopee-specific aggregations */
+export type CombinedInsights = {
+  orders: CombinedOrder[];
+  shopeeProducts: ShopeeProductStats;
+  shopeeTopProducts: ShopeeTopProduct[];
+};
+
 const CACHE_TTL = 300; // 5 minutes
 
 /**
- * Fetch and normalize WMS + Shopee orders for the given user.
- * Two parallel Prisma queries, then merge into a unified shape.
+ * Fetch and normalize WMS + Shopee orders and Shopee product aggregates
+ * for the given user. All queries run in parallel.
  */
-export async function getCombinedOrdersForUser(
+export async function getCombinedInsightsForUser(
   userId: string,
-): Promise<CombinedOrder[]> {
-  const cacheKey = cacheKeys.businessInsights.combinedOrders(userId);
-  const cached = await getCache<CombinedOrder[]>(cacheKey);
+): Promise<CombinedInsights> {
+  const cacheKey = cacheKeys.businessInsights.combinedInsights(userId);
+  const cached = await getCache<CombinedInsights>(cacheKey);
   if (cached) return cached;
 
   // Get user's Shopee shop IDs
@@ -43,50 +64,68 @@ export async function getCombinedOrdersForUser(
     select: { id: true },
   });
   const shopeeShopIds = shopeeShops.map((s) => s.id);
+  const hasShopee = shopeeShopIds.length > 0;
 
-  // Run both queries in parallel
-  const [wmsOrders, shopeeOrders] = await Promise.all([
-    prisma.order.findMany({
-      where: { userId },
-      select: {
-        id: true,
-        status: true,
-        total: true,
-        createdAt: true,
-        items: {
-          select: {
-            productName: true,
-            quantity: true,
-            price: true,
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-    shopeeShopIds.length > 0
-      ? prisma.shopeeOrder.findMany({
-          where: { shopId: { in: shopeeShopIds } },
-          select: {
-            id: true,
-            orderStatus: true,
-            totalAmount: true,
-            shopeeCreatedAt: true,
-            createdAt: true,
-            items: {
-              select: {
-                productName: true,
-                quantity: true,
-                price: true,
-              },
+  // Run all queries in parallel
+  const [wmsOrders, shopeeOrders, shopeeStatusGroups, shopeeTopRaw] =
+    await Promise.all([
+      prisma.order.findMany({
+        where: { userId },
+        select: {
+          id: true,
+          status: true,
+          total: true,
+          createdAt: true,
+          items: {
+            select: {
+              productName: true,
+              quantity: true,
+              price: true,
             },
           },
-          orderBy: { shopeeCreatedAt: "desc" },
-        })
-      : [],
-  ]);
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      hasShopee
+        ? prisma.shopeeOrder.findMany({
+            where: { shopId: { in: shopeeShopIds } },
+            select: {
+              id: true,
+              orderStatus: true,
+              totalAmount: true,
+              shopeeCreatedAt: true,
+              createdAt: true,
+              items: {
+                select: {
+                  productName: true,
+                  quantity: true,
+                  price: true,
+                },
+              },
+            },
+            orderBy: { shopeeCreatedAt: "desc" },
+          })
+        : [],
+      hasShopee
+        ? prisma.shopeeProduct.groupBy({
+            by: ["status"],
+            where: { shopId: { in: shopeeShopIds } },
+            _count: true,
+          })
+        : [],
+      hasShopee
+        ? prisma.shopeeOrderItem.groupBy({
+            by: ["productName"],
+            where: { order: { shopId: { in: shopeeShopIds } } },
+            _sum: { subtotal: true, quantity: true },
+            orderBy: { _sum: { subtotal: "desc" } },
+            take: 10,
+          })
+        : [],
+    ]);
 
-  // Normalize and merge
-  const combined: CombinedOrder[] = [
+  // Normalize orders
+  const orders: CombinedOrder[] = [
     ...wmsOrders.map((o) => ({
       id: o.id,
       source: "wms" as const,
@@ -114,10 +153,37 @@ export async function getCombinedOrdersForUser(
   ];
 
   // Sort by createdAt descending
-  combined.sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  orders.sort(
+    (a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
 
-  await setCache(cacheKey, combined, CACHE_TTL);
-  return combined;
+  // Build Shopee product stats
+  const shopeeProductStatusMap: Record<string, number> = {};
+  let shopeeProductTotal = 0;
+  for (const g of shopeeStatusGroups) {
+    shopeeProductStatusMap[g.status] = g._count;
+    shopeeProductTotal += g._count;
+  }
+
+  const shopeeProducts: ShopeeProductStats = {
+    total: shopeeProductTotal,
+    byStatus: shopeeProductStatusMap,
+  };
+
+  // Build top Shopee products
+  const shopeeTopProducts: ShopeeTopProduct[] = shopeeTopRaw.map((item) => ({
+    productName: item.productName,
+    revenue: item._sum.subtotal || 0,
+    quantity: Number(item._sum.quantity || 0),
+  }));
+
+  const result: CombinedInsights = {
+    orders,
+    shopeeProducts,
+    shopeeTopProducts,
+  };
+
+  await setCache(cacheKey, result, CACHE_TTL);
+  return result;
 }

@@ -29,8 +29,10 @@ import {
   Package,
   PieChart as PieChartIcon,
   QrCode,
+  ShoppingBag,
   ShoppingCart,
   Sparkles,
+  Tag,
   TrendingDown,
   TrendingUp,
   Users,
@@ -63,7 +65,7 @@ import { queryKeys } from "@/lib/react-query";
 import { exportToExcel, exportToCSV } from "@/lib/export";
 import type { ProductForHome } from "@/lib/server/home-data";
 import type { OrderForPage } from "@/lib/server/orders-data";
-import type { CombinedOrder } from "@/lib/server/combined-orders-data";
+import type { CombinedOrder, CombinedInsights } from "@/lib/server/combined-orders-data";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 const SOURCE_COLORS: Record<string, string> = {
@@ -74,7 +76,7 @@ const SOURCE_COLORS: Record<string, string> = {
 export type BusinessInsightPageProps = {
   initialProducts?: ProductForHome[];
   initialOrders?: OrderForPage[];
-  initialCombinedOrders?: CombinedOrder[];
+  initialCombinedInsights?: CombinedInsights;
 };
 
 /**
@@ -85,7 +87,7 @@ export type BusinessInsightPageProps = {
 export default function BusinessInsightPage({
   initialProducts,
   initialOrders,
-  initialCombinedOrders,
+  initialCombinedInsights,
 }: BusinessInsightPageProps = {}) {
   const queryClient = useQueryClient();
   // Use TanStack Query for data fetching
@@ -94,8 +96,11 @@ export default function BusinessInsightPage({
   const { user, isCheckingAuth } = useAuth();
   const { toast } = useToast();
 
-  // Combined orders (WMS + Shopee) — used for order trend charts
-  const allCombinedOrders = initialCombinedOrders ?? [];
+  // Combined insights (WMS + Shopee orders, Shopee product stats, top Shopee products)
+  const combinedInsights = initialCombinedInsights;
+  const allCombinedOrders = combinedInsights?.orders ?? [];
+  const shopeeProducts = combinedInsights?.shopeeProducts;
+  const shopeeTopProducts = combinedInsights?.shopeeTopProducts ?? [];
 
   // Hydrate React Query with server data so first paint uses it (one round-trip)
   useLayoutEffect(() => {
@@ -1003,6 +1008,15 @@ export default function BusinessInsightPage({
                   variant="rose"
                   description="Items with zero quantity"
                 />
+                {shopeeProducts && shopeeProducts.total > 0 && (
+                  <AnalyticsCard
+                    title="Shopee Listings"
+                    value={shopeeProducts.total}
+                    icon={ShoppingBag}
+                    variant="orange"
+                    description="Shopee marketplace products"
+                  />
+                )}
               </>
             )}
           </div>
@@ -1328,6 +1342,28 @@ export default function BusinessInsightPage({
                         </BarChart>
                       </ResponsiveChartContainer>
                     </ChartCard>
+                    {shopeeProducts && shopeeProducts.total > 0 && (
+                      <ChartCard
+                        title="Shopee Product Status"
+                        icon={Tag}
+                        variant="orange"
+                      >
+                        <ResponsiveChartContainer>
+                          <BarChart
+                            data={Object.entries(
+                              shopeeProducts.byStatus,
+                            ).map(([name, value]) => ({ name, value }))}
+                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="value" fill="#FF8042" />
+                          </BarChart>
+                        </ResponsiveChartContainer>
+                      </ChartCard>
+                    )}
                   </div>
                 </TabsContent>
 
@@ -1382,6 +1418,37 @@ export default function BusinessInsightPage({
                         </LineChart>
                       </ResponsiveChartContainer>
                     </ChartCard>
+                    {shopeeTopProducts.length > 0 && (
+                      <ChartCard
+                        title="Top Shopee Products by Revenue"
+                        icon={ShoppingBag}
+                        variant="orange"
+                      >
+                        <ResponsiveChartContainer>
+                          <BarChart
+                            data={shopeeTopProducts.map((p) => ({
+                              name: p.productName,
+                              revenue: p.revenue,
+                            }))}
+                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip
+                              formatter={(value) => [
+                                value != null
+                                  ? `$${Number(value).toLocaleString()}`
+                                  : "$0",
+                                "Revenue",
+                              ]}
+                              labelFormatter={(label) => `Product: ${label}`}
+                            />
+                            <Bar dataKey="revenue" fill="#FF8042" />
+                          </BarChart>
+                        </ResponsiveChartContainer>
+                      </ChartCard>
+                    )}
                   </div>
                 </TabsContent>
 
