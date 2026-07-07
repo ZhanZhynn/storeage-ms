@@ -86,20 +86,19 @@ export async function syncLazadaProducts(
 }> {
   setActiveSeller(sellerId);
 
+  const shop = await prisma.lazadaShop.findFirst({
+    where: { sellerId, userId },
+  });
+  if (!shop) throw new Error(`Lazada seller ${sellerId} not found for user ${userId}`);
+
   return runWithSyncLog(
-    { shopId: sellerId, userId, channel: "lazada", syncType: "products" },
+    { shopId: shop.id, userId, channel: "lazada", syncType: "products" },
     async () => {
       const sdk = await getLazadaSDK();
       const errors: string[] = [];
       let synced = 0;
       let created = 0;
       let updated = 0;
-
-      // Find our LazadaShop record
-      const shop = await prisma.lazadaShop.findFirst({
-        where: { sellerId, userId },
-      });
-      if (!shop) throw new Error(`Lazada seller ${sellerId} not found for user ${userId}`);
 
       // Fetch all products (auto-paginated by SDK)
       const products = await withLazadaRetry(() => sdk.getProducts());
@@ -190,19 +189,19 @@ export async function syncLazadaOrders(
 }> {
   setActiveSeller(sellerId);
 
+  const shop = await prisma.lazadaShop.findFirst({
+    where: { sellerId, userId },
+  });
+  if (!shop) throw new Error(`Lazada seller ${sellerId} not found for user ${userId}`);
+
   return runWithSyncLog(
-    { shopId: sellerId, userId, channel: "lazada", syncType: "orders" },
+    { shopId: shop.id, userId, channel: "lazada", syncType: "orders" },
     async () => {
       const sdk = await getLazadaSDK();
       const errors: string[] = [];
       let synced = 0;
       let created = 0;
       let updated = 0;
-
-      const shop = await prisma.lazadaShop.findFirst({
-        where: { sellerId, userId },
-      });
-      if (!shop) throw new Error(`Lazada seller ${sellerId} not found for user ${userId}`);
 
       // Default to last 15 days if no date specified
       const after = createdAfter || (() => {
