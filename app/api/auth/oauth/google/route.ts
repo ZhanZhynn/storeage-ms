@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getGoogleOAuthUrl, isGoogleOAuthConfigured } from "@/lib/auth/oauth";
 import { logger } from "@/lib/logger";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
+import { getRequestBaseUrl } from "@/lib/api/response-helpers";
 
 /**
  * GET /api/auth/oauth/google
@@ -37,9 +38,10 @@ export async function GET(request: NextRequest) {
     // Get callback URL from query params or use default
     const { searchParams } = new URL(request.url);
     const callbackUrl = searchParams.get("callback") || "/";
+    const baseUrl = getRequestBaseUrl(request);
     const redirectUri = new URL(
       "/api/auth/oauth/google/callback",
-      request.url
+      baseUrl
     ).toString();
 
     // Generate Google OAuth URL

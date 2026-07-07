@@ -8,6 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { getRequestBaseUrl } from "@/lib/api/response-helpers";
 
 const PUBLIC = new Set(["/login", "/register"]);
 
@@ -20,9 +21,8 @@ export function proxy(request: NextRequest) {
 
   const session = request.cookies.get("session_id")?.value;
   if (!session || session === "null" || session === "undefined") {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.search = "";
+    const baseUrl = getRequestBaseUrl(request);
+    const url = new URL("/login", baseUrl);
     return NextResponse.redirect(url);
   }
 

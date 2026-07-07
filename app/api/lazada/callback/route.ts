@@ -9,6 +9,7 @@ import { exchangeLazadaCodeForToken, persistTokens, setActiveSeller } from "@/li
 import prisma from "@/prisma/client";
 import { lazadaCallbackQuerySchema } from "@/lib/validations/lazada";
 import { logger } from "@/lib/logger";
+import { getRequestBaseUrl } from "@/lib/api/response-helpers";
 
 export async function GET(request: NextRequest) {
   try {
@@ -106,13 +107,15 @@ export async function GET(request: NextRequest) {
     logger.info(`[Lazada Auth] Seller ${sellerId} connected for user ${userId}`);
 
     // Redirect to admin Lazada page
+    const baseUrl = getRequestBaseUrl(request);
     return NextResponse.redirect(
-      new URL("/admin/lazada", request.url),
+      new URL("/admin/lazada", baseUrl),
     );
   } catch (error) {
     logger.error("[Lazada Callback] Error:", error);
+    const baseUrl = getRequestBaseUrl(request);
     return NextResponse.redirect(
-      new URL("/admin/lazada?error=callback_failed", request.url),
+      new URL("/admin/lazada?error=callback_failed", baseUrl),
     );
   }
 }

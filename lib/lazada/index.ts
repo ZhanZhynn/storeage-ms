@@ -11,6 +11,8 @@ export {
   getLazadaAuthUrl,
   exchangeLazadaCodeForToken,
   validateLazadaToken,
+  getLazadaEndpoint,
+  patchLazadaSDKEndpoint,
   LAZADA_URLS,
 } from "./server";
 export {

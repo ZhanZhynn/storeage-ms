@@ -9,6 +9,7 @@ import { exchangeCodeForToken, getShopeeShopInfo, setActiveShop } from "@/lib/sh
 import { prisma } from "@/prisma/client";
 import { shopeeCallbackQuerySchema } from "@/lib/validations/shopee";
 import { logger } from "@/lib/logger";
+import { getRequestBaseUrl } from "@/lib/api/response-helpers";
 
 export async function GET(request: NextRequest) {
   try {
@@ -98,13 +99,15 @@ export async function GET(request: NextRequest) {
     logger.info(`[Shopee Auth] Shop ${shop_id} connected for user ${userId}`);
 
     // Redirect to admin Shopee page
+    const baseUrl = getRequestBaseUrl(request);
     return NextResponse.redirect(
-      new URL("/admin/shopee", request.url),
+      new URL("/admin/shopee", baseUrl),
     );
   } catch (error) {
     logger.error("[Shopee Callback] Error:", error);
+    const baseUrl = getRequestBaseUrl(request);
     return NextResponse.redirect(
-      new URL("/admin/shopee?error=callback_failed", request.url),
+      new URL("/admin/shopee?error=callback_failed", baseUrl),
     );
   }
 }

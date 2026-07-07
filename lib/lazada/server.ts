@@ -14,6 +14,47 @@ import prisma from "@/prisma/client";
 import { getEnvVar } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
+/**
+ * Lazada REST API endpoints by country.
+ * The SDK hardcodes api.lazada.vn — we override per-request based on the seller's country.
+ */
+const LAZADA_ENDPOINTS: Record<string, string> = {
+  vn: "https://api.lazada.vn/rest",
+  sg: "https://api.lazada.sg/rest",
+  my: "https://api.lazada.com.my/rest",
+  th: "https://api.lazada.co.th/rest",
+  ph: "https://api.lazada.com.ph/rest",
+  id: "https://api.lazada.co.id/rest",
+};
+
+const DEFAULT_LAZADA_ENDPOINT = "https://api.lazada.com.my/rest";
+
+/**
+ * Return the correct Lazada REST API base URL for a given country code.
+ */
+export function getLazadaEndpoint(countryCode: string = "my"): string {
+  return LAZADA_ENDPOINTS[countryCode] ?? DEFAULT_LAZADA_ENDPOINT;
+}
+
+/**
+ * Patch the lazada-api-client SDK's hardcoded endpoint at runtime.
+ * Safe because httpGet() builds the URL synchronously before any yield.
+ *
+ * Uses eval to break Turbopack's static module resolution chain,
+ * and a full filesystem path to bypass the package's exports map.
+ */
+export function patchLazadaSDKEndpoint(countryCode: string): void {
+  // eslint-disable-next-line no-eval
+  const _require = eval("require") as NodeRequire;
+  const { join } = _require("node:path") as typeof import("node:path");
+  const constantPath = join(
+    process.cwd(),
+    "node_modules/lazada-api-client/dist/module/lazada/common/constant.js",
+  );
+  const constant = _require(constantPath) as { LZD_END_POINT: string };
+  constant.LZD_END_POINT = getLazadaEndpoint(countryCode);
+}
+
 // Lazy initialization
 let sdkInstance: LazadaModule | null = null;
 
@@ -48,7 +89,9 @@ async function buildConfig(): Promise<LazadaConfig> {
   const appSecret = getEnvVar("LAZADA_APP_SECRET");
 
   if (!appKey || !appSecret) {
-    throw new Error("Lazada is not configured. Set LAZADA_APP_KEY and LAZADA_APP_SECRET.");
+    throw new Error(
+      "Lazada is not configured. Set LAZADA_APP_KEY and LAZADA_APP_SECRET.",
+    );
   }
 
   // Find the active seller's shop record
@@ -102,7 +145,9 @@ export async function persistTokens(
     const sellerId = activeSellerId || sellerInfo?.seller_id;
 
     if (!sellerId) {
-      logger.warn("[Lazada TokenStorage] No seller ID available to persist tokens");
+      logger.warn(
+        "[Lazada TokenStorage] No seller ID available to persist tokens",
+      );
       return;
     }
 
@@ -130,7 +175,9 @@ export async function persistTokens(
           updatedAt: now,
         },
       });
-      logger.info(`[Lazada TokenStorage] Tokens persisted for seller ${sellerId}`);
+      logger.info(
+        `[Lazada TokenStorage] Tokens persisted for seller ${sellerId}`,
+      );
     } else {
       logger.warn(
         `[Lazada TokenStorage] No LazadaShop record for seller ${sellerId}. Token not persisted.`,
@@ -166,7 +213,9 @@ async function ensureFreshToken(): Promise<void> {
       }
     } catch (error) {
       logger.error("[Lazada] Token refresh failed:", error);
-      throw new Error("Lazada token refresh failed. Please re-authorize the seller.");
+      throw new Error(
+        "Lazada token refresh failed. Please re-authorize the seller.",
+      );
     }
   }
 }
@@ -193,7 +242,10 @@ export async function getLazadaSDK(): Promise<LazadaModule> {
  * Makes a direct HTTP call to a lightweight endpoint (seller info) to verify auth.
  * This catches errors that the SDK silently swallows.
  */
-export async function validateLazadaToken(): Promise<{ valid: boolean; error?: string }> {
+export async function validateLazadaToken(): Promise<{
+  valid: boolean;
+  error?: string;
+}> {
   try {
     const config = await buildConfig();
     if (!config.appAccessToken) {
@@ -217,15 +269,18 @@ export async function validateLazadaToken(): Promise<{ valid: boolean; error?: s
 
     // Sort params and create sign string
     const sortedKeys = Object.keys(params).sort();
-    const signString = sortedKeys.map((k) => `${k}${params[k]}`).join("");
+    const signString = `${path}${sortedKeys.map((k) => `${k}${params[k]}`).join("")}`;
     const sign = crypto
       .createHmac("sha256", appSecret)
       .update(signString)
       .digest("hex")
       .toUpperCase();
 
-    const queryString = sortedKeys.map((k) => `${k}=${encodeURIComponent(params[k] ?? "")}`).join("&");
-    const url = `https://api.lazada.vn/rest${path}?${queryString}&sign=${sign}`;
+    const queryString = sortedKeys
+      .map((k) => `${k}=${encodeURIComponent(params[k] ?? "")}`)
+      .join("&");
+    const baseUrl = getLazadaEndpoint(config.countryCode);
+    const url = `${baseUrl}${path}?${queryString}&sign=${sign}`;
 
     const response = await fetch(url);
     const data = await response.json();

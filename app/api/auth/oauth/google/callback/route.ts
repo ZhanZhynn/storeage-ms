@@ -19,13 +19,15 @@ import type { User } from "@prisma/client";
 import { notifyAdminsOfPendingRegistration } from "@/lib/notifications/in-app";
 import { sendPendingRegistrationAdminEmail } from "@/lib/email/notifications";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
+import { getRequestBaseUrl } from "@/lib/api/response-helpers";
 
 /**
  * Helper to redirect to login with error/pending message and clear OAuth cookies.
  * Ensures oauth_state and oauth_callback cookies are always cleaned up.
  */
 function redirectToLogin(request: NextRequest, path: string): NextResponse {
-  const response = NextResponse.redirect(new URL(path, request.url));
+  const baseUrl = getRequestBaseUrl(request);
+  const response = NextResponse.redirect(new URL(path, baseUrl));
   response.cookies.delete("oauth_state");
   response.cookies.delete("oauth_callback");
   return response;
@@ -165,9 +167,10 @@ export async function GET(request: NextRequest) {
     // Exchange authorization code for access token
     const clientId = getGoogleClientId()!;
     const clientSecret = getGoogleClientSecret()!;
+    const baseUrl = getRequestBaseUrl(request);
     const redirectUri = new URL(
       "/api/auth/oauth/google/callback",
-      request.url
+      baseUrl
     ).toString();
 
     try {
@@ -280,7 +283,7 @@ export async function GET(request: NextRequest) {
             ? "/supplier"
             : "/";
 
-      const redirectUrl = new URL(roleDest, request.url);
+      const redirectUrl = new URL(roleDest, baseUrl);
       redirectUrl.searchParams.set("oauth_success", "true");
 
       // Create response and set cookies

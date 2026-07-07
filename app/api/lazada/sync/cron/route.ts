@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import prisma from "@/prisma/client";
-import { setActiveSeller, syncLazadaAll } from "@/lib/lazada";
+import { setActiveSeller, syncLazadaAll, patchLazadaSDKEndpoint } from "@/lib/lazada";
 import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
         sellerId: true,
         userId: true,
         sellerName: true,
+        countryCode: true,
       },
     });
 
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
     for (const shop of shops) {
       try {
         setActiveSeller(shop.sellerId);
+        patchLazadaSDKEndpoint(shop.countryCode);
         const result = await syncLazadaAll(shop.sellerId, shop.userId);
         results.push({
           sellerId: shop.sellerId,

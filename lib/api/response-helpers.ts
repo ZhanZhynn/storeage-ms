@@ -3,10 +3,23 @@
  * Helper functions for standardized API responses
  */
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { captureException } from "@/lib/monitoring/sentry";
 import type { ApiResponse, ApiError, ValidationError } from "@/types/api";
+
+/**
+ * Returns the correct base URL for constructing redirect/absolute URLs.
+ * When behind a Cloudflare tunnel that doesn't forward the Host header,
+ * request.url contains localhost:3000 — this falls back to NEXT_PUBLIC_APP_URL.
+ */
+export function getRequestBaseUrl(request: NextRequest): string {
+  const url = new URL(request.url);
+  if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+    return process.env.NEXT_PUBLIC_APP_URL || `${url.protocol}//${url.host}`;
+  }
+  return `${url.protocol}//${url.host}`;
+}
 
 /**
  * Success response helper

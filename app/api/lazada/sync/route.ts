@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/utils/auth";
-import { setActiveSeller, syncLazadaProducts, syncLazadaOrders, syncLazadaAll, isSellerSyncing, validateLazadaToken } from "@/lib/lazada";
+import { setActiveSeller, syncLazadaProducts, syncLazadaOrders, syncLazadaAll, isSellerSyncing, validateLazadaToken, patchLazadaSDKEndpoint } from "@/lib/lazada";
 import { lazadaSyncBodySchema } from "@/lib/validations/lazada";
 import prisma from "@/prisma/client";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     // Ownership check
     const shop = await prisma.lazadaShop.findFirst({
       where: { sellerId, userId },
-      select: { id: true },
+      select: { id: true, countryCode: true },
     });
 
     if (!shop) {
@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
     );
 
     setActiveSeller(sellerId);
+    patchLazadaSDKEndpoint(shop.countryCode);
 
     // Pre-flight token check — fail fast with a clear message
     const tokenStatus = await validateLazadaToken();
