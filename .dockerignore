@@ -1,0 +1,58 @@
+# Dependencies
+node_modules
+
+# Build output
+.next
+
+# Environment (secrets)
+.env
+.env.*
+!.env.example
+
+# Git
+.git
+.gitignore
+
+# IDE / editor
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Documentation
+docs
+*.md
+!README.md
+
+# Vercel
+.vercel
+
+# Sentry
+sentry.*
+
+# Tests
+coverage
+vitest.config.*
+*.test.*
+*.spec.*
+
+# Scripts & config not needed in container
+docker-compose.yml
+Dockerfile
+.dockerignore
+.github
+.nvmrc
+.eslintrc*
+eslint.config.*
+tailwind.config.*
+postcss.config.*
+next-env.d.ts
+tsconfig.tsbuildinfo
+
+# Debug / temp
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*

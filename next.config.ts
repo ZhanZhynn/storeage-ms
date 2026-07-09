@@ -2,10 +2,10 @@ import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 import { SENTRY_TUNNEL_PATH } from "./lib/monitoring/sentry-config";
 import { buildNextProductionHeaderRules } from "./lib/vercel/production-headers";
-module.exports = {
-  allowedDevOrigins: ["100.72.140.36", "100.78.46.77"],
-};
+
 const nextConfig: NextConfig = {
+  output: "standalone",
+  allowedDevOrigins: ["100.72.140.36", "100.78.46.77"],
   reactStrictMode: true,
   serverExternalPackages: ["lazada-api-client"],
 
