@@ -28,9 +28,6 @@ docs
 # Vercel
 .vercel
 
-# Sentry
-sentry.*
-
 # Tests
 coverage
 vitest.config.*
