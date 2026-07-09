@@ -178,7 +178,7 @@ export async function getProductsCustom(
   const response = await fetch(url);
   const data: GetProductsResponse = await response.json();
 
-  if (data.code !== "0" && data.code !== 0) {
+  if (data.code !== "0") {
     const errorMsg = data.data?.toString() || `API error code: ${data.code}`;
     logger.error(`[Lazada Custom API] GetProducts failed: ${errorMsg}`);
     throw new Error(`Lazada API error: ${errorMsg}`);
@@ -274,7 +274,7 @@ interface LazadaOrder {
   [key: string]: unknown;
 }
 
-interface OrderItem {
+export interface OrderItem {
   order_item_id: number;
   item_id: number;
   sku_id: number;
@@ -407,7 +407,7 @@ export async function getOrdersCustom(
   const response = await fetch(url);
   const data: GetOrdersResponse = await response.json();
 
-  if (data.code !== "0" && data.code !== 0) {
+  if (data.code !== "0") {
     const errorMsg = data.data?.toString() || `API error code: ${data.code}`;
     logger.error(`[Lazada Custom API] GetOrders failed: ${errorMsg}`);
     throw new Error(`Lazada API error: ${errorMsg}`);
@@ -516,7 +516,7 @@ export async function getMultipleOrderItemsCustom(
   const response = await fetch(url);
   const data: GetOrderItemsResponse = await response.json();
 
-  if (data.code !== "0" && data.code !== 0) {
+  if (data.code !== "0") {
     const errorMsg = data.data?.toString() || `API error code: ${data.code}`;
     logger.error(`[Lazada Custom API] GetMultipleOrderItems failed: ${errorMsg}`);
     throw new Error(`Lazada API error: ${errorMsg}`);

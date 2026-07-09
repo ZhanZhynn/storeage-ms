@@ -12,7 +12,8 @@ import { Prisma } from "@prisma/client";
 import { logger } from "@/lib/logger";
 import { runWithSyncLog } from "@/lib/sync/run-with-sync-log";
 import { withRetry } from "@/lib/api/retry";
-import type { LazadaOrderDetail, OrderItem } from "lazada-api-client";
+import type { LazadaOrderDetail } from "lazada-api-client";
+import type { OrderItem } from "./custom-api";
 
 // Lazada order status mapping to our internal status
 const ORDER_STATUS_MAP: Record<string, string> = {
@@ -150,11 +151,11 @@ export async function syncLazadaProducts(
 
           const sku = product.skus?.[0];
           const stock = sku?.quantity ?? 0;
-          const price = sku?.price ?? 0;
+          const price = parseFloat(String(sku?.price ?? 0));
           const status = product.status || "active";
 
           const existing = await prisma.lazadaProduct.findFirst({
-            where: { shopId: shop.id, lazadaItemId: itemId },
+            where: { shopId: shop.id, lazadaItemId: Number(itemId) },
           });
 
           if (existing) {
@@ -164,8 +165,8 @@ export async function syncLazadaProducts(
                 itemName: product.attributes?.name || existing.itemName,
                 status,
                 price,
-                specialPrice: sku?.special_price || null,
-                stock,
+                specialPrice: sku?.special_price ? parseFloat(String(sku.special_price)) : null,
+                stock: Number(stock),
                 imageUrl: product.images?.[0] || existing.imageUrl,
                 images: product.images || existing.images,
                 lastSyncedAt: new Date(),
@@ -177,14 +178,14 @@ export async function syncLazadaProducts(
               data: {
                 shopId: shop.id,
                 userId,
-                lazadaItemId: itemId,
+                lazadaItemId: Number(itemId),
                 itemName: product.attributes?.name || `Product ${itemId}`,
                 sellerSku: sku?.SellerSku || null,
-                primaryCategory: product.primary_category,
+                primaryCategory: Number(product.primary_category),
                 status,
                 price,
-                specialPrice: sku?.special_price || null,
-                stock,
+                specialPrice: sku?.special_price ? parseFloat(String(sku.special_price)) : null,
+                stock: Number(stock),
                 imageUrl: product.images?.[0] || null,
                 images: product.images || undefined,
                 lastSyncedAt: new Date(),
@@ -380,7 +381,7 @@ export async function syncLazadaOrders(
                   shopId: shop.id,
                   lazadaOrderItemId: item.order_item_id || 0,
                   itemId: item.item_id || null,
-                  skuId: item.sku_id || null,
+                  skuId: item.sku_id ? String(item.sku_id) : null,
                   sellerSku: item.seller_sku || null,
                   shopSku: item.shop_sku || null,
                   productName: item.name || "Unknown Product",
