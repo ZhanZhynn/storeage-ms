@@ -6,6 +6,7 @@
  */
 
 import { getLazadaSDK, setActiveSeller, validateLazadaToken } from "./server";
+import { getAllProductsCustom, getAllOrdersCustom, getMultipleOrderItemsCustom } from "./custom-api";
 import prisma from "@/prisma/client";
 import { Prisma } from "@prisma/client";
 import { logger } from "@/lib/logger";
@@ -110,7 +111,6 @@ export async function syncLazadaProducts(
       }
 
       // Diagnostic: verify the SDK is hitting the correct endpoint
-      // eslint-disable-next-line no-eval
       const _require = eval("require") as NodeRequire;
       const { join } = _require("node:path") as typeof import("node:path");
       const constantPath = join(
@@ -122,25 +122,15 @@ export async function syncLazadaProducts(
         `[Lazada Sync] SDK endpoint at call time: ${constant.LZD_END_POINT}`,
       );
 
-      // Capture SDK-internal console.log errors (SDK silently swallows them)
-      const origConsoleLog = console.log;
-      const sdkErrors: string[] = [];
-      console.log = (...args: unknown[]) => {
-        sdkErrors.push(args.map(String).join(" "));
-      };
-
-      let products: Awaited<ReturnType<typeof sdk.getProducts>>;
+      // Use custom getProducts implementation (SDK's version is broken - missing mandatory filter parameter)
+      let products: Awaited<ReturnType<typeof getAllProductsCustom>>;
       try {
-        // Fetch all products (auto-paginated by SDK)
-        products = await withLazadaRetry(() => sdk.getProducts());
-      } finally {
-        console.log = origConsoleLog;
-      }
-
-      if (sdkErrors.length > 0) {
-        logger.warn(
-          `[Lazada Sync] SDK internal errors captured: ${sdkErrors.join(" | ")}`,
-        );
+        // Fetch all products using custom implementation with proper API parameters
+        products = await withLazadaRetry(() => getAllProductsCustom("live"));
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        logger.error(`[Lazada Sync] Custom getProducts failed: ${msg}`);
+        throw err;
       }
 
       // Detect silent SDK failure: token is valid but got empty results
@@ -247,7 +237,6 @@ export async function syncLazadaOrders(
   return runWithSyncLog(
     { shopId: shop.id, userId, channel: "lazada", syncType: "orders" },
     async () => {
-      const sdk = await getLazadaSDK();
       const errors: string[] = [];
       let synced = 0;
       let created = 0;
@@ -263,7 +252,6 @@ export async function syncLazadaOrders(
       }
 
       // Diagnostic: verify the SDK is hitting the correct endpoint
-      // eslint-disable-next-line no-eval
       const _require = eval("require") as NodeRequire;
       const { join } = _require("node:path") as typeof import("node:path");
       const constantPath = join(
@@ -276,18 +264,23 @@ export async function syncLazadaOrders(
       );
 
       // Default to last 15 days if no date specified
+      // Convert to ISO 8601 format without milliseconds (Lazada expects +0800, not Z)
       const after = createdAfter || (() => {
         const d = new Date();
         d.setDate(d.getDate() - 15);
-        return d.toISOString();
+        const offset = -d.getTimezoneOffset();
+        const sign = offset >= 0 ? "+" : "-";
+        const hours = String(Math.floor(Math.abs(offset) / 60)).padStart(2, "0");
+        const minutes = String(Math.abs(offset) % 60).padStart(2, "0");
+        return d.toISOString().replace(/\.\d{3}Z$/, `${sign}${hours}${minutes}`);
       })();
 
-      // Fetch all orders (auto-paginated by SDK)
+      // Fetch all orders using custom implementation
       const orders = await withLazadaRetry(() =>
-        sdk.getAllOrders({ created_after: after }),
+        getAllOrdersCustom({ created_after: after }),
       );
 
-      // Batch fetch order items (SDK getMultipleOrderItems accepts max 50 IDs)
+      // Batch fetch order items (max 50 IDs per request)
       const BATCH_SIZE = 50;
       const allItemMap = new Map<number, OrderItem[]>();
 
@@ -300,10 +293,9 @@ export async function syncLazadaOrders(
         if (orderIds.length === 0) continue;
 
         try {
-          const result = await withLazadaRetry(() =>
-            sdk.getMultipleOrderItems(orderIds.join(",")),
+          const itemsList = await withLazadaRetry(() =>
+            getMultipleOrderItemsCustom(orderIds),
           );
-          const itemsList = Array.isArray(result.data) ? result.data : [];
           for (const entry of itemsList) {
             if (entry.order_id && entry.order_items) {
               allItemMap.set(entry.order_id, entry.order_items);
@@ -333,7 +325,7 @@ export async function syncLazadaOrders(
           });
 
           const orderData = {
-            orderNumber: order.order_number,
+            orderNumber: order.order_number ? String(order.order_number) : null,
             orderStatus: internalStatus,
             paymentStatus,
             totalAmount,
