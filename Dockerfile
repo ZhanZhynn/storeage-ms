@@ -1,28 +1,22 @@
-# ── Stage 1: Install production dependencies ──────────────────────────────
-FROM node:22-bookworm-slim AS deps
-
-WORKDIR /app
-
-# Copy dependency manifests and prisma schema (needed for postinstall prisma generate)
-COPY package.json package-lock.json ./
-COPY prisma ./prisma
-
-# Install production dependencies only (triggers postinstall → prisma generate)
-RUN npm ci --omit=dev
-
-# ── Stage 2: Build the Next.js application ───────────────────────────────
+# ── Stage 1: Build the Next.js application ──────────────────────────────
 FROM node:22-bookworm-slim AS builder
 
 WORKDIR /app
 
-# Copy node_modules from deps stage
-COPY --from=deps /app/node_modules ./node_modules
+# Install OpenSSL (required by Prisma to detect correct binary target)
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
+# Copy dependency manifests and prisma schema
+COPY package.json package-lock.json ./
+COPY prisma ./prisma
+
+# Install ALL deps (including devDependencies for TypeScript types like @types/js-cookie)
+RUN npm ci
 
 # Copy full source
 COPY . .
 
 # NEXT_PUBLIC_* vars are baked into the JS bundle at build time.
-# Pass via --build-arg or docker-compose build args.
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_APP_URL
 ARG NEXT_PUBLIC_SENTRY_DSN
@@ -44,7 +38,7 @@ ENV NEXT_PUBLIC_DISABLE_BROWSER_TRANSLATE=$NEXT_PUBLIC_DISABLE_BROWSER_TRANSLATE
 # Build Next.js (output: "standalone" generates a self-contained .next/standalone dir)
 RUN npm run build
 
-# ── Stage 3: Production runner ───────────────────────────────────────────
+# ── Stage 2: Production runner ──────────────────────────────────────────
 FROM node:22-bookworm-slim AS runner
 
 WORKDIR /app
@@ -64,9 +58,6 @@ COPY --from=builder /app/public ./public
 # lazada-api-client is loaded via eval("require") at runtime — the standalone
 # tracer can't follow eval() calls, so copy it explicitly.
 COPY --from=builder /app/node_modules/lazada-api-client ./node_modules/lazada-api-client
-
-# Prisma needs the schema at runtime for some operations
-COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 3000
 
