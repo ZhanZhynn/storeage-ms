@@ -9,11 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ShoppingBag,
+  History,
   LinkIcon,
   RefreshCw,
   Package,
   ShoppingCart,
 } from "lucide-react";
+import Link from "next/link";
 import {
   MarketplaceStatsCards,
   MarketplaceDateRangeFilter,
@@ -209,30 +211,43 @@ export default function ShopeeOverview() {
             initialTo={defaultTo}
           />
           {stats && (
-            <>
-              <MarketplaceStatsCards stats={stats} titlePrefix="Shopee" />
-              <MarketplaceRevenueTrendChart
-                dateFrom={dateFrom}
-                dateTo={dateTo}
-                accentColor="#f97316"
-                queryKey={["shopee", "revenue-trend"]}
-                fetchFunction={async (granularity, from, to) => {
-                  const response = await apiClient.shopee.getRevenueTrend(
-                    granularity,
-                    undefined,
-                    from,
-                    to,
-                  );
-                  return { data: response.data.data };
-                }}
-              />
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <MarketplaceOrderStatusChart data={stats.ordersByStatus} />
-                <MarketplaceTopProductsTable data={stats.topProducts} />
-              </div>
-            </>
+            <MarketplaceStatsCards stats={stats} titlePrefix="Shopee" />
+          )}
+
+          <MarketplaceRevenueTrendChart
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            accentColor="#f97316"
+            queryKey={["shopee", "revenue-trend"]}
+            fetchFunction={async (granularity, from, to) => {
+              const response = await apiClient.shopee.getRevenueTrend(
+                granularity,
+                undefined,
+                from,
+                to,
+              );
+              return { data: response.data.data };
+            }}
+          />
+
+          {stats && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <MarketplaceOrderStatusChart data={stats.ordersByStatus} />
+              <MarketplaceTopProductsTable data={stats.topProducts} />
+            </div>
           )}
         </>
+      )}
+
+      {shops && shops.length > 0 && (
+        <div className="flex gap-4">
+          <Button variant="outline" asChild>
+            <Link href="/admin/shopee/sync-history">
+              <History className="mr-2 h-4 w-4" />
+              View Sync History
+            </Link>
+          </Button>
+        </div>
       )}
     </div>
   );
