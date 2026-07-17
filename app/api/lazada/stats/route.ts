@@ -114,11 +114,10 @@ export async function GET(request: NextRequest) {
 
     const productRevenue: Record<string, { revenue: number; quantity: number }> = {};
     for (const item of orderItems) {
-      if (!productRevenue[item.productName]) {
-        productRevenue[item.productName] = { revenue: 0, quantity: 0 };
-      }
-      productRevenue[item.productName].revenue += item.price * item.quantity;
-      productRevenue[item.productName].quantity += item.quantity;
+      const entry = productRevenue[item.productName] ?? { revenue: 0, quantity: 0 };
+      entry.revenue += item.price * item.quantity;
+      entry.quantity += item.quantity;
+      productRevenue[item.productName] = entry;
     }
 
     const topProducts = Object.entries(productRevenue)
