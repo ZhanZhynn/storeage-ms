@@ -202,21 +202,9 @@ export async function syncTikTokProducts(
                     where: { productId: dbProduct.id, tiktokSkuId: sku.id },
                   });
 
-                  const variantData = {
-                    sellerSku: sku.seller_sku || null,
-                    price: parseFloat(sku.sku_price?.price || "0"),
-                    originalPrice: sku.sku_price?.original_price
-                      ? parseFloat(sku.sku_price.original_price)
-                      : null,
-                    currency: sku.sku_price?.currency || null,
-                    totalQuantity: sku.inventory?.total_quantity ?? 0,
-                    imageUrl: sku.image_url || null,
-                    status: sku.status || "NORMAL",
-                    salesAttrs: sku.sales_attrs ? JSON.parse(JSON.stringify(sku.sales_attrs)) : undefined,
-                    lastSyncedAt: new Date(),
-                  };
+const variantData = normalizeSkuData(sku);
 
-                  if (existingVariant) {
+                   if (existingVariant) {
                     await prisma.tikTokProductVariant.update({
                       where: { id: existingVariant.id },
                       data: variantData,
@@ -266,9 +254,24 @@ export async function syncTikTokProducts(
             getProductDetail(accessToken, cipher, productId),
           );
 
-          const productDetail = detail.product;
-          if (!productDetail?.skus || productDetail.skus.length === 0) {
+          if (!detail?.skus || detail.skus.length === 0) {
             continue;
+          }
+
+          // Debug: log raw SKU data from first product to understand the API format
+          if (detailSynced === 0) {
+            const sampleSku = detail.skus[0];
+            logger.info(`[TikTok Sync] Sample SKU raw data: ${JSON.stringify({
+              id: sampleSku?.id,
+              price: sampleSku?.price,
+              sku_price: sampleSku?.sku_price,
+              inventory: sampleSku?.inventory,
+              original_price: sampleSku?.original_price,
+              currency: sampleSku?.currency,
+              status: sampleSku?.status,
+              status_info: sampleSku?.status_info,
+              sales_attributes: sampleSku?.sales_attributes,
+            })}`);
           }
 
           const dbProduct = await prisma.tikTokProduct.findFirst({
@@ -277,26 +280,23 @@ export async function syncTikTokProducts(
 
           if (!dbProduct) continue;
 
-          for (const sku of productDetail.skus) {
+          // Update product image from detail if available (main_images array)
+          const detailImageUrl = extractDetailImageUrl(detail);
+          if (detailImageUrl && !dbProduct.mainImageUrl) {
+            await prisma.tikTokProduct.update({
+              where: { id: dbProduct.id },
+              data: { mainImageUrl: detailImageUrl },
+            });
+          }
+
+          for (const sku of detail.skus) {
             if (!sku.id) continue;
 
             const existingVariant = await prisma.tikTokProductVariant.findFirst({
               where: { productId: dbProduct.id, tiktokSkuId: sku.id },
             });
 
-            const variantData = {
-              sellerSku: sku.seller_sku || null,
-              price: parseFloat(sku.sku_price?.price || "0"),
-              originalPrice: sku.sku_price?.original_price
-                ? parseFloat(sku.sku_price.original_price)
-                : null,
-              currency: sku.sku_price?.currency || null,
-              totalQuantity: sku.inventory?.total_quantity ?? 0,
-              imageUrl: sku.image_url || null,
-              status: sku.status || "NORMAL",
-              salesAttrs: sku.sales_attrs ? JSON.parse(JSON.stringify(sku.sales_attrs)) : undefined,
-              lastSyncedAt: new Date(),
-            };
+            const variantData = normalizeSkuData(sku);
 
             if (existingVariant) {
               await prisma.tikTokProductVariant.update({
@@ -593,4 +593,65 @@ export async function syncTikTokAll(
   } finally {
     releaseSyncLock(shopId);
   }
+}
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+/** Normalize SKU data from either v202502 (search) or v202309 (detail) API format. */
+function normalizeSkuData(sku: TikTokProductSKU) {
+  // Price: v202309 returns sku.price as { sale_price?, tax_exclusive_price?, currency? } (object),
+  // legacy returns it as a string, v202502 wraps it in sku.sku_price.
+  let rawPrice: string | number | undefined;
+  if (sku.sku_price?.price != null) {
+    rawPrice = sku.sku_price.price;
+  } else if (typeof sku.price === "object" && sku.price !== null) {
+    rawPrice = sku.price.sale_price ?? sku.price.tax_exclusive_price;
+  } else {
+    rawPrice = sku.price;
+  }
+  const parsedPrice = parseFloat(String(rawPrice ?? "0"));
+  const price = Number.isFinite(parsedPrice) ? parsedPrice : 0;
+
+  const rawOriginalPrice = sku.sku_price?.original_price ?? sku.original_price ?? null;
+  const parsedOriginal = rawOriginalPrice != null ? parseFloat(String(rawOriginalPrice)) : null;
+  const originalPrice = parsedOriginal != null && Number.isFinite(parsedOriginal) ? parsedOriginal : null;
+
+  const currencyVal = sku.sku_price?.currency ?? (typeof sku.price === "object" ? sku.price?.currency : sku.currency) ?? null;
+
+  // Inventory: v202309 returns an array of per-warehouse objects, legacy returns a number
+  // or { total_quantity } object. Check Array.isArray first since arrays are typeof "object".
+  let totalQuantity = 0;
+  if (Array.isArray(sku.inventory)) {
+    totalQuantity = sku.inventory.reduce((sum: number, item: { quantity?: number; available_stock?: number }) => {
+      return sum + (item.quantity ?? item.available_stock ?? 0);
+    }, 0);
+  } else if (typeof sku.inventory === "number") {
+    totalQuantity = sku.inventory;
+  } else if (sku.inventory && typeof sku.inventory === "object") {
+    totalQuantity = sku.inventory.total_quantity ?? 0;
+  }
+
+  const salesAttrs = sku.sales_attrs ?? sku.sales_attributes ?? null;
+
+  return {
+    sellerSku: sku.seller_sku || null,
+    price,
+    originalPrice,
+    currency: currencyVal,
+    totalQuantity,
+    imageUrl: sku.image_url || null,
+    status: sku.status || "NORMAL",
+    salesAttrs: salesAttrs ? JSON.parse(JSON.stringify(salesAttrs)) : null,
+    lastSyncedAt: new Date(),
+  };
+}
+
+/** Extract the first image URL from a product detail's `main_images` array. */
+function extractDetailImageUrl(detail: { main_images?: Array<{ urls?: string[]; thumb_urls?: string[] }> }): string | null {
+  if (!detail.main_images || detail.main_images.length === 0) return null;
+  const first = detail.main_images[0];
+  if (!first) return null;
+  if (first.urls && first.urls.length > 0) return first.urls[0] ?? null;
+  if (first.thumb_urls && first.thumb_urls.length > 0) return first.thumb_urls[0] ?? null;
+  return null;
 }

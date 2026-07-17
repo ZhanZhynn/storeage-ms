@@ -71,21 +71,50 @@ export type TikTokProductStatus =
   | "DRAFT";
 
 export interface TikTokProductDetail {
-  product_id: string;
+  /** v202309 uses `id`, v202502 uses `product_id` */
+  id?: string;
+  product_id?: string;
   title: string;
-  description: string;
-  category_id: string;
-  brand_id: string;
-  main_image_url: string;
-  status: TikTokProductStatus;
-  audit_status: string;
-  is_cod_allowed: boolean;
-  is_sample_order: boolean;
-  create_time: number;
-  update_time: number;
-  product_certifications: TikTokProductCertification[];
-  product_attrs: TikTokProductAttribute[];
-  skus: TikTokProductSKU[];
+  description?: string;
+  category_id?: string;
+  category_chains?: Array<{ id: string; is_leaf: boolean; local_name: string; parent_id: string }>;
+  brand_id?: string;
+  /** v202309 returns `main_images` (array of image objects) */
+  main_images?: TikTokProductImage[];
+  /** v202502 search returns `main_image_url` (string) */
+  main_image_url?: string;
+  status?: TikTokProductStatus;
+  /** v202309 returns `product_status` */
+  product_status?: TikTokProductStatus;
+  audit?: { status: string; pre_approved_reasons?: string[] };
+  audit_status?: string;
+  has_draft?: boolean;
+  is_cod_allowed?: boolean;
+  is_not_for_sale?: boolean;
+  is_pre_owned?: boolean;
+  is_replicated?: boolean;
+  is_sample_order?: boolean;
+  create_time?: number;
+  update_time?: number;
+  product_certifications?: TikTokProductCertification[];
+  product_attrs?: TikTokProductAttribute[];
+  product_attributes?: TikTokProductAttribute[];
+  manufacturer_ids?: string[];
+  package_dimensions?: { height: number; length: number; unit: string; width: number };
+  package_weight?: { unit: string; value: number };
+  recommended_categories?: unknown[];
+  product_tags?: unknown[];
+  responsible_person_ids?: unknown[];
+  subscribe_info?: unknown;
+  skus?: TikTokProductSKU[];
+}
+
+export interface TikTokProductImage {
+  height?: number;
+  width?: number;
+  uri?: string;
+  urls?: string[];
+  thumb_urls?: string[];
 }
 
 export interface TikTokProductCertification {
@@ -104,17 +133,35 @@ export interface TikTokProductAttribute {
 export interface TikTokProductSKU {
   id: string;
   seller_sku: string;
-  sku_price: TikTokSKUPrice;
-  inventory: TikTokSKUInventory;
-  sales_attrs: TikTokSalesAttribute[];
-  image_url: string;
-  status: TikTokSKUStatus;
+  /** v202502 wraps price in `sku_price`; v202309 returns `price` directly */
+  sku_price?: TikTokSKUPrice;
+  price?: TikTokSKUPriceV202309 | string;
+  original_price?: string;
+  currency?: string;
+  /** v202502 wraps inventory; v202309 returns `inventory` directly */
+  inventory?: TikTokSKUInventoryItem[] | TikTokSKUInventory | number;
+  sales_attrs?: TikTokSalesAttribute[];
+  /** v202309 uses `sales_attributes` */
+  sales_attributes?: TikTokSalesAttribute[];
+  image_url?: string;
+  /** v202309 returns `status_info`; v202502 returns `status` */
+  status?: string;
+  status_info?: { is_blocked?: boolean; reason?: string };
+  sku_dimensions?: unknown;
+  sku_weight?: unknown;
+  global_listing_policy?: unknown;
 }
 
 export interface TikTokSKUPrice {
   original_price: string;
   price: string;
   currency: string;
+}
+
+export interface TikTokSKUPriceV202309 {
+  currency?: string;
+  sale_price?: string;
+  tax_exclusive_price?: string;
 }
 
 export interface TikTokSKUInventory {
@@ -129,6 +176,12 @@ export interface TikTokWarehouseInventory {
   handling_time: number;
 }
 
+export interface TikTokSKUInventoryItem {
+  warehouse_id?: string;
+  quantity?: number;
+  available_stock?: number;
+}
+
 export interface TikTokSalesAttribute {
   attribute_id: string;
   attribute_name: string;
@@ -138,9 +191,7 @@ export interface TikTokSalesAttribute {
 
 export type TikTokSKUStatus = "NORMAL" | "DELETED" | "NOT_SALE";
 
-export interface TikTokGetProductDetailData {
-  product: TikTokProductDetail;
-}
+export type TikTokGetProductDetailData = TikTokProductDetail;
 
 // ─── Orders (v202309) ────────────────────────────────────────────────────
 

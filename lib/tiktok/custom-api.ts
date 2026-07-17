@@ -185,7 +185,7 @@ export async function getProductDetail(
     params: { shop_cipher: shopCipher },
   });
 
-  return resp.data ?? { product: {} as any };
+  return resp.data ?? ({} as any);
 }
 
 // ─── Orders ───────────────────────────────────────────────────────────────

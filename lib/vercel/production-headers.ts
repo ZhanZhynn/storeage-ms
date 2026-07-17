@@ -5,6 +5,10 @@
  * Security headers are mirrored in vercel.json (edge). Keep keys/values in sync.
  * Immutable Cache-Control for /_next/static lives ONLY here (not vercel.json) to avoid
  * duplicate rules and the Next.js build warning about custom static Cache-Control.
+ *
+ * In dev mode the /_next/static rule is suppressed: Turbopack serves dev bundles that
+ * are NOT content-hashed, so `immutable` would cause the browser to cache stale client
+ * bundles and break HMR / Fast Refresh (hydration errors).
  */
 
 export type HeaderEntry = { key: string; value: string };
@@ -34,9 +38,18 @@ export function buildNextProductionHeaderRules(): NextHeaderRule[] {
       source: "/(.*)",
       headers: [...VERCEL_SECURITY_HEADERS],
     },
-    {
-      source: "/_next/static/(.*)",
-      headers: [{ key: "Cache-Control", value: NEXT_STATIC_CACHE_CONTROL }],
-    },
+    // Only apply immutable cache to content-hashed production builds.
+    // In dev, Turbopack bundles are not content-hashed — `immutable` would
+    // let the browser serve stale bundles after code changes, breaking HMR.
+    ...(process.env.NODE_ENV === "production"
+      ? [
+          {
+            source: "/_next/static/(.*)",
+            headers: [
+              { key: "Cache-Control", value: NEXT_STATIC_CACHE_CONTROL },
+            ],
+          },
+        ]
+      : []),
   ];
 }

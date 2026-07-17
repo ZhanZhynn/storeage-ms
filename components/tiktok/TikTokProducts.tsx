@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -55,10 +55,13 @@ export default function TikTokProducts() {
   const searchParams = useSearchParams();
   const shopIdParam = searchParams.get("shopId") || undefined;
 
+  const [mounted, setMounted] = useState(false);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [sorting, setSorting] = useState<SortingState>([]);
   const limit = 20;
+
+  useEffect(() => setMounted(true), []);
 
   const { data, isLoading } = useQuery({
     queryKey: ["tiktok", "products", shopIdParam, page, search],
@@ -181,7 +184,7 @@ export default function TikTokProducts() {
 
       <MarketplaceDataTable
         table={table}
-        isLoading={isLoading}
+        isLoading={!mounted || isLoading}
         searchPlaceholder="Search products..."
         searchValue={search}
         onSearchChange={(v) => { setSearch(v); setPage(1); }}
