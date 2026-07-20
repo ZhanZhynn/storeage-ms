@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,11 +18,26 @@ import {
   Tv,
 } from "lucide-react";
 import Link from "next/link";
+import {
+  MarketplaceStatsCards,
+  MarketplaceDateRangeFilter,
+  MarketplaceRevenueTrendChart,
+  MarketplaceOrderStatusChart,
+  MarketplaceTopProductsTable,
+  LowStockAlertWidget,
+} from "@/components/shared";
 
 export default function TikTokOverview() {
   const mounted = useRef(false);
   const [isMounted, setIsMounted] = useState(false);
   const queryClient = useQueryClient();
+
+  const now = new Date();
+  const defaultFrom = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  const defaultTo = now.toISOString().split("T")[0] || "";
+
+  const [dateFrom, setDateFrom] = useState<string | null>(defaultFrom);
+  const [dateTo, setDateTo] = useState<string | null>(defaultTo);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -33,41 +49,31 @@ export default function TikTokOverview() {
   const { data: shops, isLoading: shopsLoading } = useQuery({
     queryKey: ["tiktok", "shops"],
     queryFn: async () => {
-      const res = await fetch("/api/tiktok/shops");
-      if (!res.ok) throw new Error("Failed to fetch shops");
-      return res.json();
+      const response = await apiClient.tiktok.getShops();
+      return response.data;
     },
   });
 
-  const { data: productsData } = useQuery({
-    queryKey: ["tiktok", "products", "count"],
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ["tiktok", "stats", dateFrom, dateTo],
     queryFn: async () => {
-      const res = await fetch("/api/tiktok/products?limit=1");
-      if (!res.ok) return { total: 0 };
-      return res.json();
-    },
-    enabled: !!shops && shops.length > 0,
-  });
-
-  const { data: ordersData } = useQuery({
-    queryKey: ["tiktok", "orders", "count"],
-    queryFn: async () => {
-      const res = await fetch("/api/tiktok/orders?limit=1");
-      if (!res.ok) return { total: 0 };
-      return res.json();
+      const response = await apiClient.tiktok.getStats(
+        undefined,
+        dateFrom || undefined,
+        dateTo || undefined,
+      );
+      return response.data;
     },
     enabled: !!shops && shops.length > 0,
   });
 
   const syncMutation = useMutation({
     mutationFn: async (shopId: string) => {
-      const res = await fetch("/api/tiktok/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ shopId, syncType: "all" }),
+      const response = await apiClient.tiktok.triggerSync({
+        shopId,
+        syncType: "all",
       });
-      if (!res.ok) throw new Error("Sync failed");
-      return res.json();
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tiktok"] });
@@ -76,11 +82,9 @@ export default function TikTokOverview() {
 
   const handleConnect = async () => {
     try {
-      const res = await fetch("/api/tiktok/auth");
-      if (!res.ok) throw new Error("Failed to get auth URL");
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
+      const response = await apiClient.tiktok.getAuthUrl();
+      if (response.data.url) {
+        window.location.href = response.data.url;
       }
     } catch (error) {
       console.error("Failed to get auth URL:", error);
@@ -115,7 +119,6 @@ export default function TikTokOverview() {
         </Button>
       </div>
 
-      {/* Connected Shops */}
       {shopsLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(3)].map((_, i) => (
@@ -193,40 +196,73 @@ export default function TikTokOverview() {
         </Card>
       )}
 
-      {/* Stats Cards */}
+      {/* Low Stock Alert */}
       {shops && shops.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-gradient-to-br from-card to-card/50 backdrop-blur-sm border border-border/50">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Connected Shops</CardTitle>
-              <Store className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{shops.length}</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-card to-card/50 backdrop-blur-sm border border-border/50">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Products</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{productsData?.total ?? 0}</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-card to-card/50 backdrop-blur-sm border border-border/50">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Orders</CardTitle>
-              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{ordersData?.total ?? 0}</div>
-            </CardContent>
-          </Card>
-        </div>
+        <LowStockAlertWidget
+          queryKey={["tiktok", "low-stock-alerts"]}
+          fetchProducts={async () => {
+            const response = await apiClient.tiktok.getProductPerformance();
+            const data = response.data;
+            return {
+              products: data.products.map((p) => ({
+                id: p.id,
+                itemName: p.itemName,
+                price: p.price,
+                stock: p.stock,
+                imageUrl: p.imageUrl,
+                isOutOfStock: p.isOutOfStock,
+                isLowStock: p.isLowStock,
+              })),
+              summary: {
+                outOfStock: data.summary.outOfStock,
+                lowStock: data.summary.lowStock,
+              },
+            };
+          }}
+          productsLink="/admin/tiktok/products"
+        />
       )}
 
-      {/* Quick Links */}
+      {shops && shops.length > 0 && (
+        <>
+          <MarketplaceDateRangeFilter
+            onDateRangeChange={(from, to) => {
+              setDateFrom(from);
+              setDateTo(to);
+            }}
+            initialFrom={dateFrom}
+            initialTo={dateTo}
+          />
+
+          {stats && (
+            <MarketplaceStatsCards stats={stats} titlePrefix="TikTok" />
+          )}
+
+          <MarketplaceRevenueTrendChart
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            accentColor="#fe2c55"
+            queryKey={["tiktok", "revenue-trend"]}
+            fetchFunction={async (granularity, from, to) => {
+              const response = await apiClient.tiktok.getRevenueTrend(
+                granularity,
+                undefined,
+                from,
+                to,
+              );
+              return { data: response.data.data };
+            }}
+          />
+
+          {stats && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <MarketplaceOrderStatusChart data={stats.ordersByStatus} />
+              <MarketplaceTopProductsTable data={stats.topProducts} />
+            </div>
+          )}
+        </>
+      )}
+
       {shops && shops.length > 0 && (
         <div className="flex gap-4">
           <Button variant="outline" asChild>

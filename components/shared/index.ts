@@ -64,3 +64,5 @@ export { default as MarketplaceStatsCards } from "./MarketplaceStatsCards";
 export { default as MarketplaceDateRangeFilter } from "./MarketplaceDateRangeFilter";
 export { default as MarketplaceRevenueTrendChart } from "./MarketplaceRevenueTrendChart";
 export { default as MarketplaceTopProductsTable } from "./MarketplaceTopProductsTable";
+export { default as LowStockAlertWidget } from "./LowStockAlertWidget";
+export type { LowStockAlertWidgetProps, LowStockProduct } from "./LowStockAlertWidget";

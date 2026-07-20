@@ -1340,6 +1340,49 @@ class ApiClient {
         statusText: response.statusText,
       };
     },
+
+    getProductPerformance: async (
+      shopId?: string,
+    ): Promise<
+      ApiResponse<{
+        products: {
+          id: string;
+          itemName: string;
+          price: number;
+          stock: number;
+          imageUrl: string | null;
+          status: string;
+          quantitySold30d: number;
+          revenue30d: number;
+          dailySalesRate: number;
+          daysUntilStockout: number | null;
+          stockTurnover: number | null;
+          isSlowMoving: boolean;
+          isOutOfStock: boolean;
+          isLowStock: boolean;
+          performanceRating: string;
+        }[];
+        summary: {
+          totalProducts: number;
+          lowStock: number;
+          outOfStock: number;
+          slowMoving: number;
+          excellentPerformers: number;
+          goodPerformers: number;
+        };
+        lowStockThreshold: number;
+      }>
+    > => {
+      const url = shopId
+        ? `${API_ENDPOINTS.lazada.productPerformance}?shopId=${shopId}`
+        : API_ENDPOINTS.lazada.productPerformance;
+      const response = await this.client.get(url);
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
   };
 
   /**
@@ -1484,6 +1527,103 @@ class ApiClient {
       const url = shopId
         ? `${API_ENDPOINTS.tiktok.syncLogs}?shopId=${shopId}`
         : API_ENDPOINTS.tiktok.syncLogs;
+      const response = await this.client.get(url);
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+
+    getStats: async (
+      shopId?: string,
+      dateFrom?: string,
+      dateTo?: string,
+    ): Promise<ApiResponse<{
+      totalProducts: number;
+      totalOrders: number;
+      totalRevenue: number;
+      averageOrderValue: number;
+      ordersByStatus: Record<string, number>;
+      topProducts: { name: string; revenue: number; quantity: number }[];
+      lastSyncedAt: string | null;
+    }>> => {
+      const params = new URLSearchParams();
+      if (shopId) params.set("shopId", shopId);
+      if (dateFrom) params.set("dateFrom", dateFrom);
+      if (dateTo) params.set("dateTo", dateTo);
+      const qs = params.toString();
+      const url = qs
+        ? `${API_ENDPOINTS.tiktok.stats}?${qs}`
+        : API_ENDPOINTS.tiktok.stats;
+      const response = await this.client.get(url);
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+
+    getRevenueTrend: async (
+      granularity: "daily" | "weekly" | "monthly" = "daily",
+      shopId?: string,
+      dateFrom?: string,
+      dateTo?: string,
+    ): Promise<
+      ApiResponse<{
+        data: { period: string; revenue: number; orders: number }[];
+        granularity: string;
+      }>
+    > => {
+      const searchParams = new URLSearchParams();
+      searchParams.set("granularity", granularity);
+      if (shopId) searchParams.set("shopId", shopId);
+      if (dateFrom) searchParams.set("dateFrom", dateFrom);
+      if (dateTo) searchParams.set("dateTo", dateTo);
+      const url = `${API_ENDPOINTS.tiktok.revenueTrend}?${searchParams.toString()}`;
+      const response = await this.client.get(url);
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+
+    getProductPerformance: async (
+      shopId?: string,
+    ): Promise<
+      ApiResponse<{
+        products: {
+          id: string;
+          itemName: string;
+          price: number;
+          stock: number;
+          imageUrl: string | null;
+          status: string;
+          quantitySold30d: number;
+          revenue30d: number;
+          dailySalesRate: number;
+          daysUntilStockout: number | null;
+          stockTurnover: number | null;
+          isSlowMoving: boolean;
+          isOutOfStock: boolean;
+          isLowStock: boolean;
+          performanceRating: string;
+        }[];
+        summary: {
+          totalProducts: number;
+          lowStock: number;
+          outOfStock: number;
+          slowMoving: number;
+          excellentPerformers: number;
+          goodPerformers: number;
+        };
+        lowStockThreshold: number;
+      }>
+    > => {
+      const url = shopId
+        ? `${API_ENDPOINTS.tiktok.productPerformance}?shopId=${shopId}`
+        : API_ENDPOINTS.tiktok.productPerformance;
       const response = await this.client.get(url);
       return {
         data: response.data,
@@ -1688,6 +1828,49 @@ class ApiClient {
       if (dateFrom) searchParams.set("dateFrom", dateFrom);
       if (dateTo) searchParams.set("dateTo", dateTo);
       const url = `${API_ENDPOINTS.shopify.revenueTrend}?${searchParams.toString()}`;
+      const response = await this.client.get(url);
+      return {
+        data: response.data,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    },
+
+    getProductPerformance: async (
+      shopId?: string,
+    ): Promise<
+      ApiResponse<{
+        products: {
+          id: string;
+          itemName: string;
+          price: number;
+          stock: number;
+          imageUrl: string | null;
+          status: string;
+          quantitySold30d: number;
+          revenue30d: number;
+          dailySalesRate: number;
+          daysUntilStockout: number | null;
+          stockTurnover: number | null;
+          isSlowMoving: boolean;
+          isOutOfStock: boolean;
+          isLowStock: boolean;
+          performanceRating: string;
+        }[];
+        summary: {
+          totalProducts: number;
+          lowStock: number;
+          outOfStock: number;
+          slowMoving: number;
+          excellentPerformers: number;
+          goodPerformers: number;
+        };
+        lowStockThreshold: number;
+      }>
+    > => {
+      const url = shopId
+        ? `${API_ENDPOINTS.shopify.productPerformance}?shopId=${shopId}`
+        : API_ENDPOINTS.shopify.productPerformance;
       const response = await this.client.get(url);
       return {
         data: response.data,

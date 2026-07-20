@@ -33,6 +33,7 @@ import {
   MarketplaceRevenueTrendChart,
   MarketplaceOrderStatusChart,
   MarketplaceTopProductsTable,
+  LowStockAlertWidget,
 } from "@/components/shared";
 
 interface ShopifyShop {
@@ -256,6 +257,33 @@ export default function ShopifyOverview() {
             </Button>
           </CardContent>
         </Card>
+      )}
+
+      {/* Low Stock Alert */}
+      {shops && shops.length > 0 && (
+        <LowStockAlertWidget
+          queryKey={["shopify", "low-stock-alerts"]}
+          fetchProducts={async () => {
+            const response = await apiClient.shopify.getProductPerformance();
+            const data = response.data;
+            return {
+              products: data.products.map((p) => ({
+                id: p.id,
+                itemName: p.itemName,
+                price: p.price,
+                stock: p.stock,
+                imageUrl: p.imageUrl,
+                isOutOfStock: p.isOutOfStock,
+                isLowStock: p.isLowStock,
+              })),
+              summary: {
+                outOfStock: data.summary.outOfStock,
+                lowStock: data.summary.lowStock,
+              },
+            };
+          }}
+          productsLink="/admin/shopify/products"
+        />
       )}
 
       {shops && shops.length > 0 && (

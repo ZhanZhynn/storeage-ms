@@ -172,6 +172,7 @@ export const API_ENDPOINTS = {
     orders: "/lazada/orders",
     stats: "/lazada/stats",
     revenueTrend: "/lazada/stats/revenue-trend",
+    productPerformance: "/lazada/stats/products",
   },
 
   // TikTok Shop Integration
@@ -186,6 +187,9 @@ export const API_ENDPOINTS = {
     productDetail: (id: string) => `/tiktok/products/${id}`,
     orders: "/tiktok/orders",
     orderDetail: (id: string) => `/tiktok/orders/${id}`,
+    stats: "/tiktok/stats",
+    revenueTrend: "/tiktok/stats/revenue-trend",
+    productPerformance: "/tiktok/stats/products",
   },
 
   // Shopify Integration
@@ -202,6 +206,7 @@ export const API_ENDPOINTS = {
     orderDetail: (id: string) => `/shopify/orders/${id}`,
     stats: "/shopify/stats",
     revenueTrend: "/shopify/stats/revenue-trend",
+    productPerformance: "/shopify/stats/products",
   },
 
   // Shopee Integration
