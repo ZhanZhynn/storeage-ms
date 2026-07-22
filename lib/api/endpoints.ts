@@ -142,6 +142,7 @@ export const API_ENDPOINTS = {
     analytics: "/sourcing/analytics",
     supplierScorecard: "/sourcing/supplier-scorecard",
     landedCost: "/sourcing/landed-cost",
+    supplierEvaluations: "/sourcing/supplier-evaluations",
   },
 
   // Executive KPI

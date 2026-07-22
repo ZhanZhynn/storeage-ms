@@ -13,8 +13,12 @@ export function useReceiveItems() {
     mutationFn: async (data: {
       warehouseId: string;
       poId?: string;
-      items: { productId: string; sku?: string; quantity: number; poItemId?: string; notes?: string }[];
+      items: { productId: string; sku?: string; quantity: number; poItemId?: string; notes?: string; qualityStatus?: "accepted" | "conditional" | "rejected"; qualityNotes?: string; inspectionPhotoUrls?: string[] }[];
       notes?: string;
+      actualFreightMyr?: number;
+      actualDutyMyr?: number;
+      actualTaxMyr?: number;
+      actualOtherCostMyr?: number;
     }) => {
       const response = await apiClient.receiving.create(data);
       return response.data as ReceiveResult;

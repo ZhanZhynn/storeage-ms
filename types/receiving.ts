@@ -4,6 +4,7 @@ export interface ReceiveItemInput {
   quantity: number;
   poItemId?: string;
   notes?: string;
+  inspectionPhotoUrls?: string[];
 }
 
 export interface ReceiveInput {
@@ -11,6 +12,10 @@ export interface ReceiveInput {
   poId?: string;
   items: ReceiveItemInput[];
   notes?: string;
+  actualFreightMyr?: number;
+  actualDutyMyr?: number;
+  actualTaxMyr?: number;
+  actualOtherCostMyr?: number;
 }
 
 export interface ReceivedItemResult {
