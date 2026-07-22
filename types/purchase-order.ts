@@ -31,6 +31,12 @@ export interface PurchaseOrder {
   totalAmount: number;
   currency?: string;
   convertedTotalMyr?: number | null;
+  freightMyr?: number | null;
+  dutyMyr?: number | null;
+  taxMyr?: number | null;
+  insuranceMyr?: number | null;
+  localDeliveryMyr?: number | null;
+  landedCostAdjustments?: PurchaseOrderLandedCostAdjustment[] | null;
   notes?: string;
   trackingNumber?: string;
   trackingCarrier?: string;
@@ -48,6 +54,14 @@ export interface PurchaseOrder {
   updatedAt?: string;
   createdBy: string;
   updatedBy?: string;
+}
+
+export interface PurchaseOrderLandedCostAdjustment {
+  id: string;
+  amountMyr: number;
+  reason: string;
+  createdAt: string;
+  createdBy?: string;
 }
 
 export interface CreatePurchaseOrderInput {

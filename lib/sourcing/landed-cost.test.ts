@@ -5,6 +5,10 @@ describe("estimateLandedCost", () => {
   it("includes freight, duty, tax, and other costs in unit landed cost", () => {
     expect(estimateLandedCost({ quantity: 100, unitPriceCny: 10, fxRate: 0.65, freightMyr: 100, dutyRate: 10, taxRate: 6, otherCostMyr: 50 })).toMatchObject({ goodsMyr: 650, dutyMyr: 75, taxMyr: 49.5, totalMyr: 924.5, unitLandedMyr: 9.245 });
   });
+
+  it("tracks insurance and local delivery as explicit components", () => {
+    expect(estimateLandedCost({ quantity: 10, unitPriceCny: 10, fxRate: 1, insuranceMyr: 5, localDeliveryMyr: 15 })).toMatchObject({ insuranceMyr: 5, localDeliveryMyr: 15, totalMyr: 120, unitLandedMyr: 12 });
+  });
 });
 
 describe("allocateLandedCost", () => {

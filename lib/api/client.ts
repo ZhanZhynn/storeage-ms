@@ -1161,6 +1161,8 @@ class ApiClient {
     supplierScorecard: async (workspaceId: string) => this.client.get(`${API_ENDPOINTS.sourcing.supplierScorecard}?workspaceId=${encodeURIComponent(workspaceId)}`).then((response) => ({ data: response.data, status: response.status, statusText: response.statusText })),
     landedCost: async (data: Record<string, unknown>) => this.client.post(API_ENDPOINTS.sourcing.landedCost, data).then((response) => ({ data: response.data, status: response.status, statusText: response.statusText })),
     createSupplierEvaluation: async (data: Record<string, unknown>) => this.client.post(API_ENDPOINTS.sourcing.supplierEvaluations, data).then((response) => ({ data: response.data, status: response.status, statusText: response.statusText })),
+    import: async (data: FormData) => this.client.post(API_ENDPOINTS.sourcing.import, data).then((response) => ({ data: response.data, status: response.status, statusText: response.statusText })),
+    bulk: async (data: Record<string, unknown>) => this.client.patch(API_ENDPOINTS.sourcing.bulk, data).then((response) => ({ data: response.data, status: response.status, statusText: response.statusText })),
   };
 
   /**

@@ -283,6 +283,12 @@ export async function runSourcingCommand(
           ? new Date(quoteInput.validUntil)
           : null,
         samplePhotoUrls: json(quoteInput.samplePhotoUrls),
+        paymentTerms: quoteInput.paymentTerms?.trim() || null,
+        certifications: json(quoteInput.certifications),
+        complianceNotes: quoteInput.complianceNotes?.trim() || null,
+        riskLevel: quoteInput.riskLevel || null,
+        recommendation: quoteInput.recommendation?.trim() || null,
+        priceBreaks: json(quoteInput.priceBreaks),
         notes: quoteInput.remarks?.trim() || null,
       };
       // Revisions remain case-wide for the existing unique constraint; groups identify an offer.
@@ -386,8 +392,14 @@ export async function runSourcingCommand(
              cartonWeightKg: latestSubmitted!.cartonWeightKg,
              leadTimeDays: latestSubmitted!.leadTimeDays,
              validUntil: latestSubmitted!.validUntil,
-             samplePhotoUrls: latestSubmitted!.samplePhotoUrls ?? undefined,
-            notes: command.reason.trim(),
+              samplePhotoUrls: latestSubmitted!.samplePhotoUrls ?? undefined,
+              paymentTerms: latestSubmitted!.paymentTerms,
+              certifications: latestSubmitted!.certifications ?? undefined,
+              complianceNotes: latestSubmitted!.complianceNotes,
+              riskLevel: latestSubmitted!.riskLevel,
+              recommendation: latestSubmitted!.recommendation,
+              priceBreaks: latestSubmitted!.priceBreaks ?? undefined,
+             notes: command.reason.trim(),
             createdById: actor.id,
           },
         });

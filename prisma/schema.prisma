@@ -470,6 +470,12 @@ model SourcingQuote {
   leadTimeDays Int?
   validUntil DateTime? @db.Date
   samplePhotoUrls Json?
+  paymentTerms String?
+  certifications Json?
+  complianceNotes String?
+  riskLevel String?
+  recommendation String?
+  priceBreaks Json?
   notes String?
   submittedAt DateTime? @db.Date
   createdById String @db.ObjectId
@@ -1085,6 +1091,12 @@ model PurchaseOrder {
   fxRate Float?
   fxRateDate DateTime? @db.Date
   fxProvider String?
+  freightMyr Float? @default(0)
+  dutyMyr Float? @default(0)
+  taxMyr Float? @default(0)
+  insuranceMyr Float? @default(0)
+  localDeliveryMyr Float? @default(0)
+  landedCostAdjustments Json?
   notes         String?
   trackingNumber  String?
   trackingCarrier String?

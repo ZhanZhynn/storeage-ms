@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getSessionFromRequest } from "@/utils/auth";
 import { estimateLandedCost } from "@/lib/sourcing/landed-cost";
 
-const schema = z.object({ quantity: z.coerce.number().int().positive(), unitPriceCny: z.coerce.number().nonnegative(), fxRate: z.coerce.number().positive(), freightMyr: z.coerce.number().nonnegative().optional(), dutyRate: z.coerce.number().min(0).max(100).optional(), taxRate: z.coerce.number().min(0).max(100).optional(), otherCostMyr: z.coerce.number().nonnegative().optional() });
+const schema = z.object({ quantity: z.coerce.number().int().positive(), unitPriceCny: z.coerce.number().nonnegative(), fxRate: z.coerce.number().positive(), freightMyr: z.coerce.number().nonnegative().optional(), dutyRate: z.coerce.number().min(0).max(100).optional(), taxRate: z.coerce.number().min(0).max(100).optional(), insuranceMyr: z.coerce.number().nonnegative().optional(), localDeliveryMyr: z.coerce.number().nonnegative().optional(), otherCostMyr: z.coerce.number().nonnegative().optional() });
 
 export async function POST(request: NextRequest) {
   const user = await getSessionFromRequest(request);

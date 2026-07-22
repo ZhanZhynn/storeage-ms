@@ -28,6 +28,11 @@ const optionalDateTime = z.preprocess(
   (value) => (value === "" ? null : value),
   z.coerce.date().optional().nullable(),
 );
+const stringList = z.array(z.string().trim().min(1).max(200)).max(20).optional().default([]);
+const priceBreak = z.object({
+  minQuantity: z.coerce.number().int().positive(),
+  unitPriceRmb: z.coerce.number().nonnegative(),
+});
 
 export const sourcingCaseSchema = z.object({
   workspaceId: z.string().min(1, "Workspace is required"),
@@ -58,6 +63,12 @@ export const sourcingQuoteSchema = z.object({
   // Native datetime-local inputs intentionally omit a timezone; the server stores the parsed date.
   validUntil: optionalDate,
   samplePhotoUrls: httpUrls,
+  paymentTerms: optionalText(500),
+  certifications: stringList,
+  complianceNotes: optionalText(2000),
+  riskLevel: z.enum(["low", "medium", "high"]).optional().nullable(),
+  recommendation: optionalText(2000),
+  priceBreaks: z.array(priceBreak).max(20).optional().default([]),
   remarks: optionalText(4000),
 });
 

@@ -5,6 +5,8 @@ export type LandedCostInput = {
   freightMyr?: number;
   dutyRate?: number;
   taxRate?: number;
+  insuranceMyr?: number;
+  localDeliveryMyr?: number;
   otherCostMyr?: number;
 };
 
@@ -14,9 +16,11 @@ export function estimateLandedCost(input: LandedCostInput) {
   const freightMyr = input.freightMyr ?? 0;
   const dutyMyr = (goodsMyr + freightMyr) * (input.dutyRate ?? 0) / 100;
   const taxMyr = (goodsMyr + freightMyr + dutyMyr) * (input.taxRate ?? 0) / 100;
+  const insuranceMyr = input.insuranceMyr ?? 0;
+  const localDeliveryMyr = input.localDeliveryMyr ?? 0;
   const otherCostMyr = input.otherCostMyr ?? 0;
-  const totalMyr = goodsMyr + freightMyr + dutyMyr + taxMyr + otherCostMyr;
-  return { goodsMyr, freightMyr, dutyMyr, taxMyr, otherCostMyr, totalMyr, unitLandedMyr: input.quantity ? totalMyr / input.quantity : 0 };
+  const totalMyr = goodsMyr + freightMyr + dutyMyr + taxMyr + insuranceMyr + localDeliveryMyr + otherCostMyr;
+  return { goodsMyr, freightMyr, dutyMyr, taxMyr, insuranceMyr, localDeliveryMyr, otherCostMyr, totalMyr, unitLandedMyr: input.quantity ? totalMyr / input.quantity : 0 };
 }
 
 /** Splits actual shipment charges across accepted receipt units, preserving the total to cents. */
