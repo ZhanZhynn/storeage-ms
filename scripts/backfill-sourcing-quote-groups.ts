@@ -1,6 +1,7 @@
 import { prisma } from "@/prisma/client";
 
 async function main() {
+  const dryRun = process.argv.includes("--dry-run");
   const allQuotes = await prisma.sourcingQuote.findMany({
     select: { id: true, caseId: true, quoteGroupId: true },
   });
@@ -10,6 +11,10 @@ async function main() {
     if (quote.quoteGroupId === quote.id) groups.set(quote.caseId, quote.quoteGroupId);
   }
   const quotes = allQuotes.filter((quote) => !quote.quoteGroupId);
+  if (dryRun) {
+    console.log(`Would backfill ${quotes.length} sourcing quote groups.`);
+    return;
+  }
   await Promise.all(
     quotes.map((quote) => {
       const quoteGroupId = groups.get(quote.caseId) || quote.id;
