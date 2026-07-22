@@ -22,6 +22,10 @@ export const receiveBodySchema = z.object({
   poId: z.string().optional(),
   items: z.array(receiveItemSchema).min(1, "At least one item is required"),
   notes: z.string().optional(),
+  actualFreightMyr: z.number().nonnegative().default(0),
+  actualDutyMyr: z.number().nonnegative().default(0),
+  actualTaxMyr: z.number().nonnegative().default(0),
+  actualOtherCostMyr: z.number().nonnegative().default(0),
 });
 
 export type ReceiveBody = z.infer<typeof receiveBodySchema>;

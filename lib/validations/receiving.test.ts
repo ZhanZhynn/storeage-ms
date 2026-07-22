@@ -11,4 +11,8 @@ describe("receiveBodySchema", () => {
   it("rejects an empty receipt line", () => {
     expect(receiveBodySchema.safeParse({ ...base, items: [{ ...base.items[0], acceptedQuantity: 0 }] }).success).toBe(false);
   });
+
+  it("accepts inspection photo URLs and actual landed costs", () => {
+    expect(receiveBodySchema.safeParse({ ...base, actualFreightMyr: 12.5, items: [{ ...base.items[0], acceptedQuantity: 1, inspectionPhotoUrls: ["https://example.com/inspection.jpg"] }] }).success).toBe(true);
+  });
 });

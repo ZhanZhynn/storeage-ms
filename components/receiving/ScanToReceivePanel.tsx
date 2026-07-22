@@ -39,6 +39,7 @@ interface PendingItem {
   source: "scan" | "po";
   qualityStatus?: "accepted" | "conditional" | "rejected";
   qualityNotes?: string;
+  inspectionPhotoUrls?: string[];
 }
 
 export default function ScanToReceivePanel() {
@@ -51,6 +52,7 @@ export default function ScanToReceivePanel() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [manualSku, setManualSku] = useState("");
   const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
+  const [actualCosts, setActualCosts] = useState({ actualFreightMyr: "", actualDutyMyr: "", actualTaxMyr: "", actualOtherCostMyr: "" });
 
   const selectedWarehouse = warehouses?.find((warehouse) => warehouse.id === warehouseId);
   const receivablePurchaseOrders = purchaseOrders?.filter((po) => ["approved", "ordered"].includes(po.status));
@@ -136,12 +138,15 @@ export default function ScanToReceivePanel() {
           poItemId: p.poItemId,
           qualityStatus: p.qualityStatus,
           qualityNotes: p.qualityNotes,
+          inspectionPhotoUrls: p.inspectionPhotoUrls,
         })),
+        ...Object.fromEntries(Object.entries(actualCosts).map(([key, value]) => [key, Number(value) || 0])),
       },
       {
         onSuccess: () => {
           setPendingItems([]);
-          setPoId("");
+           setPoId("");
+           setActualCosts({ actualFreightMyr: "", actualDutyMyr: "", actualTaxMyr: "", actualOtherCostMyr: "" });
         },
       },
     );
@@ -202,6 +207,8 @@ export default function ScanToReceivePanel() {
         </div>
       )}
 
+      {activePoId && <Card><CardHeader><CardTitle className="text-sm">Actual landed costs (MYR)</CardTitle></CardHeader><CardContent className="grid gap-3 sm:grid-cols-4">{([['actualFreightMyr', 'Freight'], ['actualDutyMyr', 'Duty'], ['actualTaxMyr', 'Tax'], ['actualOtherCostMyr', 'Other']] as const).map(([field, label]) => <label key={field} className="grid gap-1 text-xs">{label}<Input type="number" min="0" step="0.01" value={actualCosts[field]} onChange={(event) => setActualCosts((costs) => ({ ...costs, [field]: event.target.value }))} placeholder="0.00" /></label>)}</CardContent></Card>}
+
       <div className="flex gap-2">
         <Input
           placeholder="Or enter SKU manually..."
@@ -249,7 +256,7 @@ export default function ScanToReceivePanel() {
                   <TableHead>Product</TableHead>
                   <TableHead>SKU</TableHead>
                   <TableHead>Source</TableHead>
-                  <TableHead className="w-24">Qty</TableHead><TableHead>Quality</TableHead><TableHead>Inspection notes</TableHead>
+                   <TableHead className="w-24">Qty</TableHead><TableHead>Quality</TableHead><TableHead>Inspection notes</TableHead><TableHead>Photo URLs</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
@@ -263,9 +270,7 @@ export default function ScanToReceivePanel() {
                         {item.source === "po" ? "PO" : "Scan"}
                       </Badge>
                     </TableCell>
-                    <TableCell><Select value={item.qualityStatus || "accepted"} onValueChange={(qualityStatus: "accepted" | "conditional" | "rejected") => updateQuality(item, { qualityStatus })}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="accepted">Accepted</SelectItem><SelectItem value="conditional">Conditional</SelectItem><SelectItem value="rejected">Rejected</SelectItem></SelectContent></Select></TableCell>
-                    <TableCell><Input value={item.qualityNotes || ""} onChange={(event) => updateQuality(item, { qualityNotes: event.target.value })} maxLength={2000} placeholder="Damage or inspection note" /></TableCell>
-                    <TableCell>
+                     <TableCell>
                       <Input
                         type="number"
                         min={1}
@@ -273,7 +278,10 @@ export default function ScanToReceivePanel() {
                         onChange={(e) => updateQty(item, parseInt(e.target.value, 10) || 1)}
                         className="w-20"
                       />
-                    </TableCell>
+                     </TableCell>
+                     <TableCell><Select value={item.qualityStatus || "accepted"} onValueChange={(qualityStatus: "accepted" | "conditional" | "rejected") => updateQuality(item, { qualityStatus })}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="accepted">Accepted</SelectItem><SelectItem value="conditional">Conditional</SelectItem><SelectItem value="rejected">Rejected</SelectItem></SelectContent></Select></TableCell>
+                     <TableCell><Input value={item.qualityNotes || ""} onChange={(event) => updateQuality(item, { qualityNotes: event.target.value })} maxLength={2000} placeholder="Damage or inspection note" /></TableCell>
+                     <TableCell><Input value={(item.inspectionPhotoUrls || []).join(", ")} onChange={(event) => updateQuality(item, { inspectionPhotoUrls: event.target.value.split(",").map((url) => url.trim()).filter(Boolean) })} placeholder="https://..., https://..." /></TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" onClick={() => removeItem(item)}>
                         <Trash2 className="h-4 w-4" />

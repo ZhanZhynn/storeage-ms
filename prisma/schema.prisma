@@ -278,6 +278,7 @@ model Supplier {
   createdBy     String    @db.ObjectId // Same as userId, for clarity
   updatedBy     String?   @db.ObjectId // Last updated by user ID
   purchaseOrders PurchaseOrder[]
+  evaluations SupplierEvaluation[]
   workspace     Workspace? @relation(fields: [workspaceId], references: [id])
 
   @@index([workspaceId])
@@ -352,6 +353,7 @@ model Workspace {
   sourcingComments SourcingComment[]
   sourcingAttachments SourcingAttachment[]
   purchaseReceipts PurchaseReceipt[]
+  supplierEvaluations SupplierEvaluation[]
   invitations WorkspaceInvitation[]
 
   @@index([ownerId])
@@ -558,8 +560,14 @@ model PurchaseReceipt {
   warehouseId String @db.ObjectId
   receivedById String @db.ObjectId
   notes String?
+  actualFreightMyr Float @default(0)
+  actualDutyMyr Float @default(0)
+  actualTaxMyr Float @default(0)
+  actualOtherCostMyr Float @default(0)
+  actualLandedCostMyr Float @default(0)
   finalizedAt DateTime @default(now()) @db.Date
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
   sourcingOrder SourcingOrder? @relation(fields: [sourcingOrderId], references: [id])
   sourcingCase SourcingCase? @relation(fields: [sourcingCaseId], references: [id])
   items PurchaseReceiptItem[]
@@ -578,11 +586,32 @@ model PurchaseReceiptItem {
   qualityStatus String? // accepted | conditional | rejected
   qualityNotes String?
   inspectionPhotoUrls Json?
+  allocatedLandedCostMyr Float @default(0)
+  unitLandedCostMyr Float?
   notes String?
   receipt PurchaseReceipt @relation(fields: [purchaseReceiptId], references: [id], onDelete: Cascade)
 
   @@index([purchaseReceiptId])
   @@index([purchaseOrderItemId])
+}
+
+model SupplierEvaluation {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  workspaceId String @db.ObjectId
+  supplierId String @db.ObjectId
+  purchaseOrderId String? @db.ObjectId
+  qualityRating Int
+  timelinessRating Int
+  communicationRating Int
+  valueRating Int
+  notes String?
+  createdById String @db.ObjectId
+  createdAt DateTime @default(now()) @db.Date
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, supplierId, createdAt])
+  @@index([purchaseOrderId])
 }
 
 // Reusable, workspace-scoped starting points for common sourcing requests.
@@ -1076,6 +1105,7 @@ model PurchaseOrder {
   items         PurchaseOrderItem[]
   workspace     Workspace? @relation(fields: [workspaceId], references: [id])
   sourcingOrder SourcingOrder?
+  receipts PurchaseReceipt[]
 
   @@index([userId])
   @@index([supplierId])

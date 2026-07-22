@@ -6,6 +6,7 @@ import { prisma } from "@/prisma/client";
 import { invalidateAllServerCaches } from "@/lib/cache";
 import { logger } from "@/lib/logger";
 import { requireWorkspaceRole, SourcingAccessError } from "@/lib/sourcing/auth";
+import { allocateLandedCost } from "@/lib/sourcing/landed-cost";
 import type { ReceiveResult, ReceivedItemResult } from "@/types/receiving";
 
 export async function POST(request: NextRequest) {
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const validation = receiveBodySchema.safeParse(await request.json());
     if (!validation.success) return NextResponse.json({ error: "Invalid request", details: validation.error.flatten() }, { status: 400 });
-    const { warehouseId, poId, items, notes } = validation.data;
+    const { warehouseId, poId, items, notes, actualFreightMyr, actualDutyMyr, actualTaxMyr, actualOtherCostMyr } = validation.data;
     if (!poId && user.role !== "admin") throw new SourcingAccessError("Only global admins may create ad-hoc receipts");
 
     // MongoDB reports concurrent writes as transaction conflicts. Retrying the
@@ -85,7 +86,9 @@ export async function POST(request: NextRequest) {
           }
         }
         if (po.workspaceId) {
-          await tx.purchaseReceipt.create({ data: { workspaceId: po.workspaceId, purchaseOrderId: po.id, sourcingOrderId: po.sourcingOrder?.id, sourcingCaseId: po.sourcingOrder?.caseId, warehouseId, receivedById: user.id, notes, items: { create: receiptItems } } });
+          const actualLandedCostMyr = actualFreightMyr + actualDutyMyr + actualTaxMyr + actualOtherCostMyr;
+          const allocations = allocateLandedCost(actualLandedCostMyr, receiptItems.map((item) => item.acceptedQuantity));
+          await tx.purchaseReceipt.create({ data: { workspaceId: po.workspaceId, purchaseOrderId: po.id, sourcingOrderId: po.sourcingOrder?.id, sourcingCaseId: po.sourcingOrder?.caseId, warehouseId, receivedById: user.id, notes, actualFreightMyr, actualDutyMyr, actualTaxMyr, actualOtherCostMyr, actualLandedCostMyr, items: { create: receiptItems.map((item, index) => ({ ...item, allocatedLandedCostMyr: allocations[index] ?? 0, unitLandedCostMyr: item.acceptedQuantity ? (allocations[index] ?? 0) / item.acceptedQuantity : null })) } } });
         }
       }
       const status = po ? (await tx.purchaseOrder.findUnique({ where: { id: po.id }, select: { status: true } }))?.status : undefined;
