@@ -20,12 +20,14 @@ import { useCreateCheckout } from "@/hooks/queries";
 import { CreditCard, Loader2, ShieldCheck } from "lucide-react";
 import TestCredentialsCard from "./TestCredentialsCard";
 import type { CheckoutType } from "@/types";
+import { formatMoney } from "@/lib/money";
 
 interface PaymentDialogProps {
   type: CheckoutType;
   id: string;
   referenceNumber: string;
   amount: number;
+  currency?: string;
   items?: Array<{
     name: string;
     quantity?: number;
@@ -46,6 +48,7 @@ export default function PaymentDialog({
   id,
   referenceNumber,
   amount,
+  currency = "MYR",
   items,
   tax,
   shipping,
@@ -68,7 +71,7 @@ export default function PaymentDialog({
         {trigger || (
           <Button disabled={disabled}>
             <CreditCard className="mr-2 h-4 w-4" />
-            Pay ${amount.toFixed(2)}
+            Pay {formatMoney(amount, currency)}
           </Button>
         )}
       </DialogTrigger>
@@ -114,7 +117,7 @@ export default function PaymentDialog({
                       <span className="text-white truncate">{item.name}</span>
                     </span>
                     <span className="font-medium text-white shrink-0">
-                      ${item.price.toFixed(2)}
+                      {formatMoney(item.price, currency)}
                     </span>
                   </div>
                 ))}
@@ -141,20 +144,20 @@ export default function PaymentDialog({
                   {tax != null && tax > 0 && (
                     <div className="flex items-center justify-between text-white">
                       <span>Tax</span>
-                      <span>${tax.toFixed(2)}</span>
+                      <span>{formatMoney(tax, currency)}</span>
                     </div>
                   )}
                   {shipping != null && shipping > 0 && (
                     <div className="flex items-center justify-between text-white">
                       <span>Shipping</span>
-                      <span>${shipping.toFixed(2)}</span>
+                      <span>{formatMoney(shipping, currency)}</span>
                     </div>
                   )}
                   {discount != null && discount > 0 && (
                     <div className="flex items-center justify-between text-white">
                       <span>Discount</span>
                       <span className="text-emerald-400">
-                        -${discount.toFixed(2)}
+                        -{formatMoney(discount, currency)}
                       </span>
                     </div>
                   )}
@@ -167,7 +170,7 @@ export default function PaymentDialog({
             <div className="flex items-center justify-between pt-1">
               <span className="font-semibold text-white">Total</span>
               <span className="text-xl font-semibold text-white">
-                ${amount.toFixed(2)}
+                {formatMoney(amount, currency)}
               </span>
             </div>
           </div>

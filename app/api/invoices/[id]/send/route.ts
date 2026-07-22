@@ -14,6 +14,7 @@ import { getStripe, isStripeConfigured } from "@/lib/stripe";
 import { createInvoiceSentNotification } from "@/lib/notifications/in-app";
 import { prisma } from "@/prisma/client";
 import type { InvoiceEmailData, BillingAddress } from "@/types";
+import { resolveTransactionCurrency, toStripeMinorUnits } from "@/lib/money";
 
 /**
  * POST /api/invoices/:id/send
@@ -97,6 +98,14 @@ export async function POST(
     if (!paymentLink && invoice.amountDue > 0 && isStripeConfigured()) {
       try {
         const stripe = getStripe();
+        const currency = resolveTransactionCurrency(invoice.currency);
+        const amountMinor = toStripeMinorUnits(invoice.amountDue, currency);
+        if (amountMinor <= 0) {
+          return NextResponse.json(
+            { error: "Invoice amount due must be greater than zero" },
+            { status: 400 },
+          );
+        }
         const baseUrl =
           process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_LOCAL_API_URL || "http://localhost:3000";
 
@@ -105,8 +114,8 @@ export async function POST(
           line_items: [
             {
               price_data: {
-                currency: "usd",
-                unit_amount: Math.round(invoice.amountDue * 100), // Stripe uses cents
+                currency: currency.toLowerCase(),
+                unit_amount: amountMinor,
                 product_data: {
                   name: `Invoice ${invoice.invoiceNumber}`,
                   description: `Payment for order ${order.orderNumber}`,
@@ -124,6 +133,19 @@ export async function POST(
             invoiceNumber: invoice.invoiceNumber,
             orderId: invoice.orderId,
             orderNumber: order.orderNumber,
+            currency,
+            amountMinor: String(amountMinor),
+          },
+          payment_intent_data: {
+            metadata: {
+              type: "invoice",
+              invoiceId: invoice.id,
+              invoiceNumber: invoice.invoiceNumber,
+              orderId: invoice.orderId,
+              orderNumber: order.orderNumber,
+              currency,
+              amountMinor: String(amountMinor),
+            },
           },
         });
 
@@ -174,6 +196,7 @@ export async function POST(
       total: invoice.total,
       amountPaid: invoice.amountPaid,
       amountDue: invoice.amountDue,
+      currency: resolveTransactionCurrency(invoice.currency),
       paymentLink: paymentLink || undefined,
       invoiceUrl: `${
         process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_LOCAL_API_URL || "http://localhost:3000"
@@ -222,6 +245,7 @@ export async function POST(
       userId: updatedInvoice.userId,
       clientId: updatedInvoice.clientId,
       status: updatedInvoice.status,
+      currency: resolveTransactionCurrency(updatedInvoice.currency),
       subtotal: updatedInvoice.subtotal,
       tax: updatedInvoice.tax,
       shipping: updatedInvoice.shipping ?? null,

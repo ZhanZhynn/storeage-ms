@@ -13,6 +13,7 @@ import { createAuditLog } from "@/prisma/audit-log";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
 import { prisma } from "@/prisma/client";
 import type { CreateInvoiceInput, InvoiceFilters } from "@/types";
+import { resolveTransactionCurrency } from "@/lib/money";
 
 /**
  * GET /api/invoices
@@ -136,6 +137,7 @@ export async function GET(request: NextRequest) {
         userId: invoice.userId,
         clientId: invoice.clientId,
         status: invoice.status,
+        currency: resolveTransactionCurrency(invoice.currency),
         subtotal: invoice.subtotal,
         tax: invoice.tax,
         shipping: invoice.shipping ?? null,
@@ -240,6 +242,7 @@ export async function POST(request: NextRequest) {
       userId: invoice.userId,
       clientId: invoice.clientId,
       status: invoice.status,
+      currency: resolveTransactionCurrency(invoice.currency),
       subtotal: invoice.subtotal,
       tax: invoice.tax,
       shipping: invoice.shipping ?? null,

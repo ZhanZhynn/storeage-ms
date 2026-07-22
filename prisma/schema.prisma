@@ -40,6 +40,7 @@ model Invoice {
   userId        String   @db.ObjectId // User who created the invoice (admin/warehouse user)
   clientId      String?  @db.ObjectId // Client who the invoice is for (optional)
   status        String   @default("draft") // Invoice status: draft, sent, paid, overdue, cancelled
+  currency      String   @default("MYR") // ISO 4217 transaction currency
   subtotal      Float    @default(0) // Invoice subtotal (before tax, shipping, discount)
   tax           Float? // Tax amount (optional)
   shipping      Float? // Shipping amount (optional), same as order for transparency
@@ -73,6 +74,7 @@ model Order {
   clientId          String?     @db.ObjectId // Client who placed the order (optional for now, will be used when client portal is implemented)
   status            String      @default("pending") // Order status: pending, confirmed, processing, shipped, delivered, cancelled
   paymentStatus     String      @default("unpaid") // Payment status: unpaid, paid, refunded, partial
+  currency          String      @default("MYR") // ISO 4217 transaction currency
   subtotal          Float       @default(0) // Order subtotal (before tax and shipping)
   tax               Float? // Tax amount (optional)
   shipping          Float? // Shipping cost (optional)

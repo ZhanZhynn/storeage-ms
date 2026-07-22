@@ -61,8 +61,10 @@ import type {
   ShippingAddress,
   BillingAddress,
   CreateOrderInput,
+  TransactionCurrency,
 } from "@/types";
 import { logger } from "@/lib/logger";
+import { formatMoney } from "@/lib/money";
 import { Plus, Trash2, X } from "lucide-react";
 import { useAuth } from "@/contexts";
 import { useToast } from "@/hooks/use-toast";
@@ -81,6 +83,7 @@ interface OrderDialogProps {
  * Extended form data type for creating orders (includes order items array and UI state)
  */
 interface OrderFormData {
+  currency: TransactionCurrency;
   items: Array<{
     productId: string;
     quantity?: number | undefined;
@@ -248,6 +251,7 @@ export default function OrderDialog({
     resolver: zodResolver(createOrderSchema),
     defaultValues: {
       items: [{ productId: "", quantity: undefined }],
+      currency: "MYR",
       useSameAddress: true,
       shippingAddress: {
         street: "",
@@ -338,6 +342,7 @@ export default function OrderDialog({
     if (!open && !editingOrder) {
       createReset({
         items: [{ productId: "", quantity: undefined }],
+        currency: "MYR",
         useSameAddress: true,
         shippingAddress: {
           street: "",
@@ -432,6 +437,7 @@ export default function OrderDialog({
       // Prepare order data matching CreateOrderInput type
       // Convert empty addresses to undefined to pass validation
       const orderData: CreateOrderInput = {
+        currency: data.currency,
         items: validItems.map((item) => {
           const qty =
             item.quantity !== undefined && item.quantity !== null
@@ -462,6 +468,7 @@ export default function OrderDialog({
       // Reset form after successful submission
       createReset({
         items: [{ productId: "", quantity: 1 }],
+        currency: "MYR",
         useSameAddress: true,
         shippingAddress: {
           street: "",
@@ -1006,6 +1013,22 @@ export default function OrderDialog({
               )}
             >
               <div className="space-y-6">
+                <div className="max-w-xs space-y-2">
+                  <Label className="text-white/80 text-sm">Currency</Label>
+                  <Select
+                    value={createWatch("currency")}
+                    onValueChange={(value) => createSetValue("currency", value as TransactionCurrency)}
+                  >
+                    <SelectTrigger className="h-11 w-full border-violet-400/30 dark:border-white/20 bg-white/10 dark:bg-white/5 text-white">
+                      <SelectValue placeholder="Currency" />
+                    </SelectTrigger>
+                    <SelectContent className="border-violet-400/20 dark:border-white/10 bg-white/80 dark:bg-popover/50">
+                      <SelectItem value="MYR">MYR</SelectItem>
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="CNY">CNY</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 {/* Order Items Section */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -1116,8 +1139,7 @@ export default function OrderDialog({
                                             value={product.id}
                                             className="cursor-pointer text-gray-900 dark:text-white focus:bg-violet-100 dark:focus:bg-white/10 focus:text-gray-900 dark:focus:text-white"
                                           >
-                                            {product.name} - $
-                                            {Number(product.price).toFixed(2)}{" "}
+                                            {product.name} - {formatMoney(Number(product.price), createWatch("currency"))}{" "}
                                             (Stock: {product.quantity})
                                           </SelectItem>
                                         ))
@@ -1219,7 +1241,7 @@ export default function OrderDialog({
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {/* Subtotal - aligned with product column */}
                             <div className="text-sm text-white/70">
-                              Subtotal: ${itemSubtotal.toFixed(2)} (
+                              Subtotal: {formatMoney(itemSubtotal, createWatch("currency"))} (
                               {selectedProduct.name} × {quantity || 0})
                             </div>
                             {/* Stock validation warning - aligned with quantity column */}
@@ -1368,25 +1390,25 @@ export default function OrderDialog({
                   <div className="p-4 border border-violet-400/20 rounded-lg bg-white/5 space-y-2">
                     <div className="flex justify-between text-sm text-white/70">
                       <span>Subtotal:</span>
-                      <span>${subtotal.toFixed(2)}</span>
+                      <span>{formatMoney(subtotal, createWatch("currency"))}</span>
                     </div>
                     <div className="flex justify-between text-sm text-white/70">
                       <span>Tax (7%):</span>
-                      <span>${orderFees.taxAmount.toFixed(2)}</span>
+                      <span>{formatMoney(orderFees.taxAmount, createWatch("currency"))}</span>
                     </div>
                     <div className="flex justify-between text-sm text-white/70">
                       <span>Shipping:</span>
-                      <span>${orderFees.shippingAmount.toFixed(2)}</span>
+                      <span>{formatMoney(orderFees.shippingAmount, createWatch("currency"))}</span>
                     </div>
                     <div className="flex justify-between text-sm text-white/70">
                       <span>Discount ({orderFees.discountPercent}%):</span>
                       <span className="text-red-400">
-                        -${orderFees.discountAmount.toFixed(2)}
+                        -{formatMoney(orderFees.discountAmount, createWatch("currency"))}
                       </span>
                     </div>
                     <div className="flex justify-between text-base font-semibold text-white pt-2 border-t border-violet-400/20">
                       <span>Total:</span>
-                      <span>${total.toFixed(2)}</span>
+                      <span>{formatMoney(total, createWatch("currency"))}</span>
                     </div>
                   </div>
                 </div>

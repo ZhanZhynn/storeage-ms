@@ -7,6 +7,7 @@ import { prisma } from "@/prisma/client";
 import type { Prisma } from "@prisma/client";
 import type { CreateInvoiceInput, UpdateInvoiceInput, InvoiceFilters } from "@/types/invoice";
 import { logger } from "@/lib/logger";
+import { resolveTransactionCurrency } from "@/lib/money";
 
 /**
  * Generate a unique invoice number
@@ -95,6 +96,7 @@ export async function createInvoice(
       userId, // Invoice issued by the authenticated user (product owner / admin)
       clientId: order.clientId,
       status: "draft",
+      currency: resolveTransactionCurrency(data.currency ?? order.currency),
       subtotal,
       tax: tax > 0 ? tax : null,
       shipping: shipping > 0 ? shipping : null,
@@ -205,6 +207,7 @@ export async function ensureInvoiceForPaidOrder(
       userId: issuerId,
       clientId: order.clientId,
       status: "paid",
+      currency: resolveTransactionCurrency(order.currency),
       subtotal,
       tax: tax > 0 ? tax : null,
       shipping: shipping > 0 ? shipping : null,

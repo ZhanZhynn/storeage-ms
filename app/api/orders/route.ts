@@ -21,6 +21,7 @@ import { createOrderNotification, createClientOrderReceivedNotification } from "
 import { prisma } from "@/prisma/client";
 import { createAuditLog } from "@/prisma/audit-log";
 import type { CreateOrderInput } from "@/types";
+import { resolveTransactionCurrency } from "@/lib/money";
 
 /**
  * GET /api/orders
@@ -123,8 +124,9 @@ export async function GET(request: NextRequest) {
       orderNumber: order.orderNumber,
       userId: order.userId,
       clientId: order.clientId,
-      status: order.status,
-      paymentStatus: order.paymentStatus,
+       status: order.status,
+       paymentStatus: order.paymentStatus,
+       currency: resolveTransactionCurrency(order.currency),
       subtotal: order.subtotal,
       tax: order.tax,
       shipping: order.shipping,
@@ -301,8 +303,9 @@ export async function POST(request: NextRequest) {
             })),
             subtotal: order.subtotal,
             tax: order.tax || undefined,
-            shipping: order.shipping || undefined,
-            total: order.total,
+             shipping: order.shipping || undefined,
+             total: order.total,
+             currency: resolveTransactionCurrency(order.currency),
             shippingAddress: order.shippingAddress as {
               street: string;
               city: string;
@@ -330,6 +333,7 @@ export async function POST(request: NextRequest) {
       clientId: order.clientId,
       status: order.status,
       paymentStatus: order.paymentStatus,
+      currency: resolveTransactionCurrency(order.currency),
       subtotal: order.subtotal,
       tax: order.tax,
       shipping: order.shipping,

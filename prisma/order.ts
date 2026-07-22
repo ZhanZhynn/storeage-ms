@@ -8,6 +8,7 @@ import { createStripeRefund } from "@/lib/stripe";
 import type { Prisma } from "@prisma/client";
 import type { CreateOrderInput, UpdateOrderInput } from "@/types/order";
 import { invalidateCache, cacheKeys } from "@/lib/cache";
+import { resolveTransactionCurrency } from "@/lib/money";
 
 /**
  * Generate unique order number
@@ -108,6 +109,7 @@ export async function createOrder(data: CreateOrderInput, userId: string) {
       clientId: data.clientId || null,
       status: "pending",
       paymentStatus: "unpaid",
+      currency: resolveTransactionCurrency(data.currency),
       subtotal,
       tax: tax > 0 ? tax : null,
       shipping: shipping > 0 ? shipping : null,

@@ -11,6 +11,10 @@ import { prisma } from "@/prisma/client";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
 import { createCheckoutBodySchema } from "@/lib/validations/payment";
 import type { CheckoutSessionResponse } from "@/types";
+import {
+  resolveTransactionCurrency,
+  toStripeMinorUnits,
+} from "@/lib/money";
 
 /**
  * POST /api/payments/checkout
@@ -105,31 +109,33 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      const currency = resolveTransactionCurrency(order.currency);
+      const totalMinor = toStripeMinorUnits(order.total, currency);
+      if (totalMinor <= 0) {
+        return NextResponse.json(
+          { error: "Order total must be greater than zero" },
+          { status: 400 },
+        );
+      }
+
       // Stripe requires unit_amount to be a non-negative integer, so we cannot send a negative "Discount" line.
       // When there is a discount, use a single line item with the order total; otherwise itemize.
       if (order.discount && order.discount > 0) {
-        const totalCents = Math.round(order.total * 100);
-        if (totalCents < 0) {
-          return NextResponse.json(
-            { error: "Order total cannot be negative" },
-            { status: 400 },
-          );
-        }
         const parts: string[] = [];
-        if (order.subtotal) parts.push(`Subtotal $${order.subtotal.toFixed(2)}`);
-        if (order.tax && order.tax > 0) parts.push(`Tax $${order.tax.toFixed(2)}`);
+        if (order.subtotal) parts.push(`Subtotal ${order.subtotal.toFixed(2)}`);
+        if (order.tax && order.tax > 0) parts.push(`Tax ${order.tax.toFixed(2)}`);
         if (order.shipping && order.shipping > 0)
-          parts.push(`Shipping $${order.shipping.toFixed(2)}`);
-        parts.push(`Discount -$${order.discount.toFixed(2)}`);
+          parts.push(`Shipping ${order.shipping.toFixed(2)}`);
+        parts.push(`Discount -${order.discount.toFixed(2)}`);
         lineItems = [
           {
             price_data: {
-              currency: "usd",
+              currency: currency.toLowerCase(),
               product_data: {
                 name: `Order ${order.orderNumber}`,
-                description: parts.join(" · ") + ` → Total $${order.total.toFixed(2)}`,
+                description: parts.join(" · ") + ` → Total ${order.total.toFixed(2)} ${currency}`,
               },
-              unit_amount: totalCents,
+              unit_amount: totalMinor,
             },
             quantity: 1,
           },
@@ -137,21 +143,21 @@ export async function POST(request: NextRequest) {
       } else {
         lineItems = order.items.map((item) => ({
           price_data: {
-            currency: "usd",
+            currency: currency.toLowerCase(),
             product_data: {
               name: item.productName,
               description: item.sku ? `SKU: ${item.sku}` : undefined,
             },
-            unit_amount: Math.round(item.price * 100),
+            unit_amount: toStripeMinorUnits(item.price, currency),
           },
           quantity: item.quantity,
         }));
         if (order.tax && order.tax > 0) {
           lineItems.push({
             price_data: {
-              currency: "usd",
+              currency: currency.toLowerCase(),
               product_data: { name: "Tax" },
-              unit_amount: Math.round(order.tax * 100),
+              unit_amount: toStripeMinorUnits(order.tax, currency),
             },
             quantity: 1,
           });
@@ -159,17 +165,38 @@ export async function POST(request: NextRequest) {
         if (order.shipping && order.shipping > 0) {
           lineItems.push({
             price_data: {
-              currency: "usd",
+              currency: currency.toLowerCase(),
               product_data: { name: "Shipping" },
-              unit_amount: Math.round(order.shipping * 100),
+              unit_amount: toStripeMinorUnits(order.shipping, currency),
             },
             quantity: 1,
           });
         }
       }
 
+      // Item-level rounding can differ from a stored total by one minor unit.
+      // Charge the record total rather than accepting a mismatched settlement.
+      const itemizedMinor = lineItems.reduce(
+        (sum, item) => sum + item.price_data.unit_amount * item.quantity,
+        0,
+      );
+      if (itemizedMinor !== totalMinor) {
+        lineItems = [
+          {
+            price_data: {
+              currency: currency.toLowerCase(),
+              product_data: { name: `Order ${order.orderNumber}` },
+              unit_amount: totalMinor,
+            },
+            quantity: 1,
+          },
+        ];
+      }
+
       metadata.orderNumber = order.orderNumber;
       metadata.orderId = order.id;
+      metadata.currency = currency;
+      metadata.amountMinor = String(totalMinor);
 
       // Get client email if available
       if (order.clientId) {
@@ -218,16 +245,25 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      const currency = resolveTransactionCurrency(invoice.currency);
+      const amountMinor = toStripeMinorUnits(invoice.amountDue, currency);
+      if (amountMinor <= 0) {
+        return NextResponse.json(
+          { error: "Invoice amount due must be greater than zero" },
+          { status: 400 },
+        );
+      }
+
       // Use invoice amount due
       lineItems = [
         {
           price_data: {
-            currency: "usd",
+            currency: currency.toLowerCase(),
             product_data: {
               name: `Invoice ${invoice.invoiceNumber}`,
               description: `Payment for invoice ${invoice.invoiceNumber}`,
             },
-            unit_amount: Math.round(invoice.amountDue * 100),
+            unit_amount: amountMinor,
           },
           quantity: 1,
         },
@@ -235,6 +271,8 @@ export async function POST(request: NextRequest) {
 
       metadata.invoiceNumber = invoice.invoiceNumber;
       metadata.invoiceId = invoice.id;
+      metadata.currency = currency;
+      metadata.amountMinor = String(amountMinor);
 
       // Get client email if available
       if (invoice.clientId) {
@@ -257,6 +295,7 @@ export async function POST(request: NextRequest) {
       payment_method_types: ["card"],
       line_items: lineItems,
       metadata,
+      payment_intent_data: { metadata },
       customer_email: customerEmail,
       success_url:
         successUrl ||

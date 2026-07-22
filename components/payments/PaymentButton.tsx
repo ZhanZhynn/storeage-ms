@@ -10,11 +10,13 @@ import { Button } from "@/components/ui/button";
 import { useCreateCheckout } from "@/hooks/queries";
 import { CreditCard, Loader2 } from "lucide-react";
 import type { CheckoutType } from "@/types";
+import { formatMoney } from "@/lib/money";
 
 interface PaymentButtonProps {
   type: CheckoutType;
   id: string;
   amount?: number;
+  currency?: string;
   disabled?: boolean;
   variant?: "default" | "outline" | "secondary";
   size?: "default" | "sm" | "lg";
@@ -25,6 +27,7 @@ export default function PaymentButton({
   type,
   id,
   amount,
+  currency = "MYR",
   disabled,
   variant = "default",
   size = "default",
@@ -54,7 +57,7 @@ export default function PaymentButton({
       ) : (
         <>
           <CreditCard className="mr-2 h-4 w-4" />
-          Pay {amount ? `$${amount.toFixed(2)}` : "Now"}
+          Pay {amount ? formatMoney(amount, currency) : "Now"}
         </>
       )}
     </Button>

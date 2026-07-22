@@ -54,6 +54,7 @@ export function generateOrderConfirmationEmail(
     clientName,
     items,
     subtotal,
+    currency = "MYR",
     tax,
     shipping,
     total,
@@ -71,8 +72,8 @@ export function generateOrderConfirmationEmail(
         <tr>
           <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #333333;">${item.productName}</td>
           <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #666666; text-align: center;">${item.quantity}</td>
-          <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #666666; text-align: right;">${formatCurrency(item.price)}</td>
-          <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #333333; text-align: right; font-weight: 600;">${formatCurrency(item.subtotal)}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #666666; text-align: right;">${formatCurrency(item.price, currency)}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #333333; text-align: right; font-weight: 600;">${formatCurrency(item.subtotal, currency)}</td>
         </tr>
       `
     )
@@ -148,13 +149,13 @@ export function generateOrderConfirmationEmail(
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 20px 0;">
                   <tr>
                     <td style="padding: 8px 0; text-align: right; color: #666666;">Subtotal:</td>
-                    <td style="padding: 8px 0; padding-left: 20px; text-align: right; color: #333333; font-weight: 600; width: 120px;">${formatCurrency(subtotal)}</td>
+                    <td style="padding: 8px 0; padding-left: 20px; text-align: right; color: #333333; font-weight: 600; width: 120px;">${formatCurrency(subtotal, currency)}</td>
                   </tr>
                   ${
                     tax
                       ? `<tr>
                     <td style="padding: 8px 0; text-align: right; color: #666666;">Tax:</td>
-                    <td style="padding: 8px 0; padding-left: 20px; text-align: right; color: #333333; font-weight: 600;">${formatCurrency(tax)}</td>
+                    <td style="padding: 8px 0; padding-left: 20px; text-align: right; color: #333333; font-weight: 600;">${formatCurrency(tax, currency)}</td>
                   </tr>`
                       : ""
                   }
@@ -162,13 +163,13 @@ export function generateOrderConfirmationEmail(
                     shipping
                       ? `<tr>
                     <td style="padding: 8px 0; text-align: right; color: #666666;">Shipping:</td>
-                    <td style="padding: 8px 0; padding-left: 20px; text-align: right; color: #333333; font-weight: 600;">${formatCurrency(shipping)}</td>
+                    <td style="padding: 8px 0; padding-left: 20px; text-align: right; color: #333333; font-weight: 600;">${formatCurrency(shipping, currency)}</td>
                   </tr>`
                       : ""
                   }
                   <tr style="border-top: 2px solid #333333;">
                     <td style="padding: 12px 0; text-align: right; color: #333333; font-size: 18px; font-weight: 700;">Total:</td>
-                    <td style="padding: 12px 0; padding-left: 20px; text-align: right; color: #27ae60; font-size: 18px; font-weight: 700;">${formatCurrency(total)}</td>
+                    <td style="padding: 12px 0; padding-left: 20px; text-align: right; color: #27ae60; font-size: 18px; font-weight: 700;">${formatCurrency(total, currency)}</td>
                   </tr>
                 </table>
 
@@ -210,7 +211,7 @@ export function generateOrderConfirmationEmail(
 
   const itemsText = items
     .map(
-      (item) => `- ${item.productName} (Qty: ${item.quantity}) - ${formatCurrency(item.price)} each = ${formatCurrency(item.subtotal)}`
+      (item) => `- ${item.productName} (Qty: ${item.quantity}) - ${formatCurrency(item.price, currency)} each = ${formatCurrency(item.subtotal, currency)}`
     )
     .join("\n");
 
@@ -229,8 +230,8 @@ Order Items:
 ${itemsText}
 
 Order Summary:
-- Subtotal: ${formatCurrency(subtotal)}
-${tax ? `- Tax: ${formatCurrency(tax)}\n` : ""}${shipping ? `- Shipping: ${formatCurrency(shipping)}\n` : ""}- Total: ${formatCurrency(total)}
+- Subtotal: ${formatCurrency(subtotal, currency)}
+${tax ? `- Tax: ${formatCurrency(tax, currency)}\n` : ""}${shipping ? `- Shipping: ${formatCurrency(shipping, currency)}\n` : ""}- Total: ${formatCurrency(total, currency)}
 
 ${shippingAddress ? `Shipping Address:\n${shippingAddress.street}\n${shippingAddress.city}${shippingAddress.state ? `, ${shippingAddress.state}` : ""} ${shippingAddress.zipCode}\n${shippingAddress.country}\n\n` : ""}We'll send you another email when your order ships. If you have any questions, please contact our support team.
 
@@ -261,6 +262,7 @@ export function generateInvoiceEmail(data: InvoiceEmailData): EmailContent {
     orderNumber,
     items,
     subtotal,
+    currency = "MYR",
     tax,
     shipping,
     discount,
@@ -281,8 +283,8 @@ export function generateInvoiceEmail(data: InvoiceEmailData): EmailContent {
         <tr>
           <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #333333;">${item.description}</td>
           <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #666666; text-align: center;">${item.quantity}</td>
-          <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #666666; text-align: right;">${formatCurrency(item.unitPrice)}</td>
-          <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #333333; text-align: right; font-weight: 600;">${formatCurrency(item.subtotal)}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #666666; text-align: right;">${formatCurrency(item.unitPrice, currency)}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #eeeeee; color: #333333; text-align: right; font-weight: 600;">${formatCurrency(item.subtotal, currency)}</td>
         </tr>
       `
     )
@@ -372,13 +374,13 @@ export function generateInvoiceEmail(data: InvoiceEmailData): EmailContent {
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 20px 0;">
                   <tr>
                     <td style="padding: 8px 0; text-align: right; color: #666666;">Subtotal:</td>
-                    <td style="padding: 8px 0; padding-left: 20px; text-align: right; color: #333333; font-weight: 600; width: 120px;">${formatCurrency(subtotal)}</td>
+                    <td style="padding: 8px 0; padding-left: 20px; text-align: right; color: #333333; font-weight: 600; width: 120px;">${formatCurrency(subtotal, currency)}</td>
                   </tr>
                   ${
                     discount
                       ? `<tr>
                     <td style="padding: 8px 0; text-align: right; color: #666666;">Discount:</td>
-                    <td style="padding: 8px 0; padding-left: 20px; text-align: right; color: #27ae60; font-weight: 600;">-${formatCurrency(discount)}</td>
+                    <td style="padding: 8px 0; padding-left: 20px; text-align: right; color: #27ae60; font-weight: 600;">-${formatCurrency(discount, currency)}</td>
                   </tr>`
                       : ""
                   }
@@ -386,7 +388,7 @@ export function generateInvoiceEmail(data: InvoiceEmailData): EmailContent {
                     tax
                       ? `<tr>
                     <td style="padding: 8px 0; text-align: right; color: #666666;">Tax:</td>
-                    <td style="padding: 8px 0; padding-left: 20px; text-align: right; color: #333333; font-weight: 600;">${formatCurrency(tax)}</td>
+                    <td style="padding: 8px 0; padding-left: 20px; text-align: right; color: #333333; font-weight: 600;">${formatCurrency(tax, currency)}</td>
                   </tr>`
                       : ""
                   }
@@ -394,25 +396,25 @@ export function generateInvoiceEmail(data: InvoiceEmailData): EmailContent {
                     shipping
                       ? `<tr>
                     <td style="padding: 8px 0; text-align: right; color: #666666;">Shipping:</td>
-                    <td style="padding: 8px 0; padding-left: 20px; text-align: right; color: #333333; font-weight: 600;">${formatCurrency(shipping)}</td>
+                    <td style="padding: 8px 0; padding-left: 20px; text-align: right; color: #333333; font-weight: 600;">${formatCurrency(shipping, currency)}</td>
                   </tr>`
                       : ""
                   }
                   <tr style="border-top: 2px solid #333333;">
                     <td style="padding: 12px 0; text-align: right; color: #333333; font-size: 18px; font-weight: 700;">Total:</td>
-                    <td style="padding: 12px 0; padding-left: 20px; text-align: right; color: #333333; font-size: 18px; font-weight: 700;">${formatCurrency(total)}</td>
+                    <td style="padding: 12px 0; padding-left: 20px; text-align: right; color: #333333; font-size: 18px; font-weight: 700;">${formatCurrency(total, currency)}</td>
                   </tr>
                   ${
                     amountPaid
                       ? `<tr>
                     <td style="padding: 8px 0; text-align: right; color: #666666;">Amount Paid:</td>
-                    <td style="padding: 8px 0; padding-left: 20px; text-align: right; color: #27ae60; font-weight: 600;">${formatCurrency(amountPaid)}</td>
+                    <td style="padding: 8px 0; padding-left: 20px; text-align: right; color: #27ae60; font-weight: 600;">${formatCurrency(amountPaid, currency)}</td>
                   </tr>`
                       : ""
                   }
                   <tr style="border-top: 2px solid ${status === "overdue" ? "#e74c3c" : "#333333"};">
                     <td style="padding: 12px 0; text-align: right; color: ${status === "overdue" ? "#e74c3c" : "#333333"}; font-size: 18px; font-weight: 700;">Amount Due:</td>
-                    <td style="padding: 12px 0; padding-left: 20px; text-align: right; color: ${status === "overdue" ? "#e74c3c" : "#27ae60"}; font-size: 18px; font-weight: 700;">${formatCurrency(amountDue)}</td>
+                    <td style="padding: 12px 0; padding-left: 20px; text-align: right; color: ${status === "overdue" ? "#e74c3c" : "#27ae60"}; font-size: 18px; font-weight: 700;">${formatCurrency(amountDue, currency)}</td>
                   </tr>
                 </table>
 
@@ -457,7 +459,7 @@ export function generateInvoiceEmail(data: InvoiceEmailData): EmailContent {
 
   const itemsText = items
     .map(
-      (item) => `- ${item.description} (Qty: ${item.quantity}) - ${formatCurrency(item.unitPrice)} each = ${formatCurrency(item.subtotal)}`
+      (item) => `- ${item.description} (Qty: ${item.quantity}) - ${formatCurrency(item.unitPrice, currency)} each = ${formatCurrency(item.subtotal, currency)}`
     )
     .join("\n");
 
@@ -478,9 +480,9 @@ Invoice Items:
 ${itemsText}
 
 Invoice Summary:
-- Subtotal: ${formatCurrency(subtotal)}
-${discount ? `- Discount: -${formatCurrency(discount)}\n` : ""}${tax ? `- Tax: ${formatCurrency(tax)}\n` : ""}${shipping ? `- Shipping: ${formatCurrency(shipping)}\n` : ""}- Total: ${formatCurrency(total)}
-${amountPaid ? `- Amount Paid: ${formatCurrency(amountPaid)}\n` : ""}- Amount Due: ${formatCurrency(amountDue)}
+- Subtotal: ${formatCurrency(subtotal, currency)}
+${discount ? `- Discount: -${formatCurrency(discount, currency)}\n` : ""}${tax ? `- Tax: ${formatCurrency(tax, currency)}\n` : ""}${shipping ? `- Shipping: ${formatCurrency(shipping, currency)}\n` : ""}- Total: ${formatCurrency(total, currency)}
+${amountPaid ? `- Amount Paid: ${formatCurrency(amountPaid, currency)}\n` : ""}- Amount Due: ${formatCurrency(amountDue, currency)}
 
 ${paymentLink ? `Pay Invoice: ${paymentLink}\n\n` : ""}${invoiceUrl ? `View Invoice: ${invoiceUrl}\n\n` : ""}${status === "overdue" ? "THIS INVOICE IS OVERDUE. Please make payment immediately to avoid any service interruptions.\n\n" : ""}If you have any questions about this invoice, please contact our support team.
 

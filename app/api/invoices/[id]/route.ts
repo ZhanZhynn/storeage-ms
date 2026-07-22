@@ -18,6 +18,7 @@ import { updateInvoiceSchema } from "@/lib/validations";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
 import { createAuditLog } from "@/prisma/audit-log";
 import type { UpdateInvoiceInput } from "@/types";
+import { resolveTransactionCurrency } from "@/lib/money";
 
 /**
  * GET /api/invoices/:id
@@ -143,6 +144,7 @@ export async function GET(
       userId: invoice.userId,
       clientId: invoice.clientId,
       status: invoice.status,
+      currency: resolveTransactionCurrency(invoice.currency),
       subtotal: invoice.subtotal,
       tax: invoice.tax,
       shipping: invoice.shipping ?? null,
@@ -306,6 +308,7 @@ export async function PUT(
       userId: invoice.userId,
       clientId: invoice.clientId,
       status: invoice.status,
+      currency: resolveTransactionCurrency(invoice.currency),
       subtotal: invoice.subtotal,
       tax: invoice.tax,
       shipping: invoice.shipping ?? null,

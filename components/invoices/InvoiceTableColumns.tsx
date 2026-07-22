@@ -20,6 +20,7 @@ import { IoMdArrowDown, IoMdArrowUp } from "react-icons/io";
 import { format } from "date-fns";
 import Link from "next/link";
 import InvoiceActions from "./InvoiceActions";
+import { formatMoney } from "@/lib/money";
 
 /**
  * Get invoice status badge color
@@ -199,21 +200,21 @@ export const createInvoiceColumns = (
   {
     accessorKey: "total",
     header: ({ column }) => <SortableHeader column={column} label="Total" />,
-    cell: ({ getValue }) => {
+    cell: ({ getValue, row }) => {
       const total = getValue<number>();
       return (
-        <span className="font-semibold">${total.toFixed(2)}</span>
+        <span className="font-semibold">{formatMoney(total, row.original.currency)}</span>
       );
     },
   },
   {
     accessorKey: "amountDue",
     header: ({ column }) => <SortableHeader column={column} label="Amount Due" />,
-    cell: ({ getValue }) => {
+    cell: ({ getValue, row }) => {
       const amountDue = getValue<number>();
       return (
         <span className={`font-semibold ${amountDue > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
-          ${amountDue.toFixed(2)}
+          {formatMoney(amountDue, row.original.currency)}
         </span>
       );
     },

@@ -3,6 +3,7 @@
  */
 
 import type { BillingAddress } from "./order";
+import type { TransactionCurrency } from "@/lib/money";
 
 /**
  * Invoice status types
@@ -24,6 +25,7 @@ export interface Invoice {
   userId: string;
   clientId?: string | null;
   status: InvoiceStatus;
+  currency: TransactionCurrency;
   subtotal: number;
   tax?: number | null;
   shipping?: number | null;
@@ -68,6 +70,7 @@ export interface Invoice {
  */
 export interface CreateInvoiceInput {
   orderId: string;
+  currency?: TransactionCurrency;
   dueDate: string; // ISO string for date
   tax?: number;
   shipping?: number;

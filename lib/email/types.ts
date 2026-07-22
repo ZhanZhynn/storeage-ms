@@ -119,6 +119,7 @@ export interface OrderConfirmationData {
     subtotal: number;
   }>;
   subtotal: number;
+  currency?: string;
   tax?: number;
   shipping?: number;
   total: number;
@@ -150,6 +151,7 @@ export interface InvoiceEmailData {
     subtotal: number;
   }>;
   subtotal: number;
+  currency?: string;
   tax?: number;
   shipping?: number;
   discount?: number;

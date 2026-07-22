@@ -22,6 +22,7 @@ import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
 import { sendOrderStatusUpdate } from "@/lib/email/notifications";
 import { createOrderNotification } from "@/lib/notifications/in-app";
 import { createAuditLog } from "@/prisma/audit-log";
+import { resolveTransactionCurrency } from "@/lib/money";
 
 /**
  * GET /api/orders/:id
@@ -119,6 +120,7 @@ export async function GET(
       clientId: order.clientId,
       status: order.status,
       paymentStatus: order.paymentStatus,
+      currency: resolveTransactionCurrency(order.currency),
       subtotal: order.subtotal,
       tax: order.tax,
       shipping: order.shipping,

@@ -4,6 +4,9 @@
  */
 
 import { z } from "zod";
+import { DEFAULT_CURRENCY, TRANSACTION_CURRENCIES } from "@/lib/money";
+
+export const transactionCurrencySchema = z.enum(TRANSACTION_CURRENCIES);
 
 /**
  * Shipping address schema
@@ -56,6 +59,7 @@ const transformEmptyAddress = (address: unknown): unknown => {
  */
 export const createOrderSchema = z.object({
   clientId: z.string().optional(),
+  currency: transactionCurrencySchema.default(DEFAULT_CURRENCY),
   items: z.array(orderItemSchema).min(1, "At least one item is required"),
   shippingAddress: z.preprocess(transformEmptyAddress, shippingAddressSchema.optional()),
   billingAddress: z.preprocess(transformEmptyAddress, billingAddressSchema.optional()),

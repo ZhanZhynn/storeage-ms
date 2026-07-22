@@ -2,6 +2,9 @@
  * Order-related type definitions
  */
 
+import type { TransactionCurrency } from "@/lib/money";
+export type { TransactionCurrency } from "@/lib/money";
+
 /**
  * Order status types
  */
@@ -71,6 +74,7 @@ export interface Order {
   clientId?: string | null; // Client who placed the order (optional)
   status: OrderStatus;
   paymentStatus: PaymentStatus;
+  currency: TransactionCurrency;
   subtotal: number;
   tax?: number | null;
   shipping?: number | null;
@@ -112,6 +116,7 @@ export interface Order {
  */
 export interface CreateOrderInput {
   clientId?: string; // Optional client ID (for future client portal)
+  currency?: TransactionCurrency;
   items: Array<{
     productId: string;
     quantity: number;

@@ -44,6 +44,7 @@ import {
 import type { InvoiceStatus } from "@/types";
 import type { Invoice } from "@/types";
 import { cn } from "@/lib/utils";
+import { formatMoney } from "@/lib/money";
 import InvoiceDialog from "@/components/invoices/InvoiceDialog";
 import { AlertDialogWrapper } from "@/components/dialogs";
 import { PaymentDialog } from "@/components/payments";
@@ -544,12 +545,11 @@ export default function InvoiceDetailPage({
                       : "text-emerald-600 dark:text-emerald-400",
                 )}
               >
-                ${invoice.amountDue.toFixed(2)}
+                {formatMoney(invoice.amountDue, invoice.currency)}
               </div>
               {invoice.amountPaid > 0 && (
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                  Paid: ${invoice.amountPaid.toFixed(2)} / $
-                  {invoice.total.toFixed(2)}
+                  Paid: {formatMoney(invoice.amountPaid, invoice.currency)} / {formatMoney(invoice.total, invoice.currency)}
                 </p>
               )}
             </GlassCard>
@@ -839,7 +839,7 @@ export default function InvoiceDetailPage({
                     Subtotal:
                   </span>
                   <span className="font-medium text-gray-900 dark:text-white">
-                    ${invoice.subtotal.toFixed(2)}
+                    {formatMoney(invoice.subtotal, invoice.currency)}
                   </span>
                 </div>
                 {invoice.tax && invoice.tax > 0 && (
@@ -848,7 +848,7 @@ export default function InvoiceDetailPage({
                       Tax:
                     </span>
                     <span className="font-medium text-gray-900 dark:text-white">
-                      ${invoice.tax.toFixed(2)}
+                      {formatMoney(invoice.tax, invoice.currency)}
                     </span>
                   </div>
                 )}
@@ -858,7 +858,7 @@ export default function InvoiceDetailPage({
                       Shipping:
                     </span>
                     <span className="font-medium text-gray-900 dark:text-white">
-                      ${invoice.shipping.toFixed(2)}
+                      {formatMoney(invoice.shipping, invoice.currency)}
                     </span>
                   </div>
                 )}
@@ -868,7 +868,7 @@ export default function InvoiceDetailPage({
                       Discount:
                     </span>
                     <span className="font-medium text-rose-600 dark:text-rose-400">
-                      -${invoice.discount.toFixed(2)}
+                      -{formatMoney(invoice.discount, invoice.currency)}
                     </span>
                   </div>
                 )}
@@ -876,7 +876,7 @@ export default function InvoiceDetailPage({
                 <div className="flex justify-between text-lg font-semibold p-3 rounded-xl bg-gradient-to-r from-blue-100/50 via-blue-50/30 to-transparent dark:from-blue-500/15 dark:via-blue-500/10 dark:to-transparent border border-blue-200/30 dark:border-blue-400/20">
                   <span className="text-gray-900 dark:text-white">Total:</span>
                   <span className="text-blue-600 dark:text-blue-400">
-                    ${invoice.total.toFixed(2)}
+                    {formatMoney(invoice.total, invoice.currency)}
                   </span>
                 </div>
                 {invoice.amountPaid > 0 && (
@@ -887,7 +887,7 @@ export default function InvoiceDetailPage({
                         Amount Paid:
                       </span>
                       <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                        ${invoice.amountPaid.toFixed(2)}
+                        {formatMoney(invoice.amountPaid, invoice.currency)}
                       </span>
                     </div>
                     <div
@@ -912,7 +912,7 @@ export default function InvoiceDetailPage({
                               : "text-emerald-600 dark:text-emerald-400",
                         )}
                       >
-                        ${invoice.amountDue.toFixed(2)}
+                        {formatMoney(invoice.amountDue, invoice.currency)}
                       </span>
                     </div>
                   </>
@@ -990,13 +990,14 @@ export default function InvoiceDetailPage({
                   id={invoice.id}
                   referenceNumber={invoice.invoiceNumber}
                   amount={invoice.amountDue}
+                  currency={invoice.currency}
                   tax={invoice.tax ?? undefined}
                   shipping={invoice.shipping ?? undefined}
                   discount={invoice.discount ?? undefined}
                   trigger={
                     <Button className="w-full sm:w-auto gap-2 rounded-xl border border-emerald-400/30 bg-gradient-to-r from-emerald-500/70 via-emerald-500/50 to-emerald-500/30 text-white shadow-[0_10px_25px_rgba(16,185,129,0.35)] backdrop-blur-sm hover:border-emerald-300/50 hover:from-emerald-500/80 hover:via-emerald-500/60 hover:to-emerald-500/40 transition-all duration-300">
                       <CreditCard className="h-4 w-4 shrink-0" />
-                      Pay ${invoice.amountDue.toFixed(2)}
+                      Pay {formatMoney(invoice.amountDue, invoice.currency)}
                     </Button>
                   }
                 />

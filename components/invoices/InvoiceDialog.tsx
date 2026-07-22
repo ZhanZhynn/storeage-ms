@@ -38,6 +38,7 @@ import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormField, FormNumberField } from "@/components/forms";
 import { DeferredSelectGate } from "@/components/shared";
+import { formatMoney, resolveTransactionCurrency } from "@/lib/money";
 
 interface InvoiceDialogProps {
   children?: React.ReactNode;
@@ -47,8 +48,7 @@ interface InvoiceDialogProps {
   onEditInvoice?: (invoice: Invoice | null) => void;
 }
 
-const fmt = (v: number) =>
-  `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const fmt = (v: number, currency = "MYR") => formatMoney(v, currency);
 
 /**
  * Invoice Dialog Component
@@ -365,6 +365,9 @@ export default function InvoiceDialog({
 
       const invoiceData: CreateInvoiceInput = {
         orderId: selectedOrderId,
+        currency: selectedOrder
+          ? resolveTransactionCurrency(selectedOrder.currency)
+          : undefined,
         dueDate: new Date(dueDate).toISOString(),
         tax: orderTax > 0 ? orderTax : undefined,
         shipping: orderShipping > 0 ? orderShipping : undefined,
@@ -647,7 +650,7 @@ export default function InvoiceDialog({
                           isAdminInvoicesPage && isAdmin && placer;
                         return (
                           <SelectItem key={order.id} value={order.id}>
-                            {order.orderNumber} - {fmt(order.total)} (
+                            {order.orderNumber} - {fmt(order.total, resolveTransactionCurrency(order.currency))} (
                             {order.status})
                             {showPlacer ? ` — ${placer}` : ""}
                           </SelectItem>
@@ -659,7 +662,7 @@ export default function InvoiceDialog({
               </DeferredSelectGate>
               {selectedOrder && (
                 <p className="text-xs text-white/60">
-                  Order Total: ${selectedOrder.total.toFixed(2)} | Items: {selectedOrder.items?.length || 0}
+                  Order Total: {fmt(selectedOrder.total, resolveTransactionCurrency(selectedOrder.currency))} | Items: {selectedOrder.items?.length || 0}
                 </p>
               )}
             </div>
@@ -688,29 +691,29 @@ export default function InvoiceDialog({
               <div className="p-4 border border-indigo-400/20 rounded-lg bg-white/5 space-y-2">
                 <div className="flex justify-between text-sm text-white/70">
                   <span>Subtotal:</span>
-                  <span>{fmt(selectedOrder.subtotal ?? 0)}</span>
+                   <span>{fmt(selectedOrder.subtotal ?? 0, resolveTransactionCurrency(selectedOrder.currency))}</span>
                 </div>
                 {(selectedOrder.tax ?? 0) > 0 && (
                   <div className="flex justify-between text-sm text-white/70">
                     <span>Tax (7%):</span>
-                    <span>{fmt(selectedOrder.tax ?? 0)}</span>
+                     <span>{fmt(selectedOrder.tax ?? 0, resolveTransactionCurrency(selectedOrder.currency))}</span>
                   </div>
                 )}
                 {(selectedOrder.shipping ?? 0) > 0 && (
                   <div className="flex justify-between text-sm text-white/70">
                     <span>Shipping:</span>
-                    <span>{fmt(selectedOrder.shipping ?? 0)}</span>
+                     <span>{fmt(selectedOrder.shipping ?? 0, resolveTransactionCurrency(selectedOrder.currency))}</span>
                   </div>
                 )}
                 {(selectedOrder.discount ?? 0) > 0 && (
                   <div className="flex justify-between text-sm text-white/70">
                     <span>Discount:</span>
-                    <span className="text-red-400">-{fmt(selectedOrder.discount ?? 0)}</span>
+                     <span className="text-red-400">-{fmt(selectedOrder.discount ?? 0, resolveTransactionCurrency(selectedOrder.currency))}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-base font-semibold text-white pt-2 border-t border-indigo-400/20">
                   <span>Invoice Total:</span>
-                  <span>{fmt(selectedOrder.total ?? 0)}</span>
+                   <span>{fmt(selectedOrder.total ?? 0, resolveTransactionCurrency(selectedOrder.currency))}</span>
                 </div>
                 <p className="text-xs text-white/50 pt-1">
                   Tax, shipping, and discount are calculated from the order and cannot be changed.

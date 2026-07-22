@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { convertMoney, formatMoney, roundMoney } from "./money";
+import {
+  convertMoney,
+  formatMoney,
+  fromStripeMinorUnits,
+  resolveTransactionCurrency,
+  roundMoney,
+  toStripeMinorUnits,
+} from "./money";
 
 describe("money", () => {
   it("formats MYR and CNY with explicit currencies", () => {
@@ -14,5 +21,12 @@ describe("money", () => {
 
   it("rejects invalid rates", () => {
     expect(() => convertMoney(1, 0)).toThrow("positive exchange rate");
+  });
+
+  it("uses MYR for legacy records and converts Stripe minor units", () => {
+    expect(resolveTransactionCurrency(undefined)).toBe("MYR");
+    expect(resolveTransactionCurrency("USD")).toBe("USD");
+    expect(toStripeMinorUnits(12.345, "USD")).toBe(1235);
+    expect(fromStripeMinorUnits(1235, "USD")).toBe(12.35);
   });
 });

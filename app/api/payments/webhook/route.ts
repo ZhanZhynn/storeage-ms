@@ -13,6 +13,11 @@ import {
 } from "@/lib/stripe";
 import { prisma } from "@/prisma/client";
 import { ensureInvoiceForPaidOrder } from "@/prisma/invoice";
+import {
+  fromStripeMinorUnits,
+  resolveTransactionCurrency,
+  toStripeMinorUnits,
+} from "@/lib/money";
 
 /**
  * Disable body parsing for webhook verification
@@ -112,8 +117,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
-  const { type, referenceId, orderId, invoiceId, userId } = metadata;
-  const amountTotal = session.amount_total ? session.amount_total / 100 : 0;
+  const { type, referenceId, orderId, invoiceId } = metadata;
 
   logger.info(
     `Checkout completed for ${type} ${referenceId || orderId || invoiceId}`,
@@ -129,6 +133,16 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     });
 
     if (order && order.paymentStatus !== "paid") {
+      const currency = resolveTransactionCurrency(order.currency);
+      const amountMinor = toStripeMinorUnits(order.total, currency);
+      if (!checkoutMatchesRecord(session, currency, amountMinor)) {
+        logger.error("Checkout settlement does not match order currency or amount", {
+          orderId: orderIdToUpdate,
+          sessionId: session.id,
+        });
+        return;
+      }
+      const amountTotal = fromStripeMinorUnits(amountMinor, currency);
       const paymentIntentId =
         typeof session.payment_intent === "string"
           ? session.payment_intent
@@ -181,6 +195,25 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       typeof session.payment_intent === "string"
         ? session.payment_intent
         : session.payment_intent?.id;
+    const invoiceForPayment = await prisma.invoice.findUnique({
+      where: { id: invoiceIdToUpdate },
+    });
+    if (!invoiceForPayment) {
+      logger.warn("Invoice not found for completed checkout", { invoiceId: invoiceIdToUpdate });
+      return;
+    }
+    if (invoiceForPayment.status === "paid") return;
+    const currency = resolveTransactionCurrency(invoiceForPayment.currency);
+    const amountMinor = toStripeMinorUnits(invoiceForPayment.amountDue, currency);
+    if (!checkoutMatchesRecord(session, currency, amountMinor)) {
+      logger.error("Checkout settlement does not match invoice currency or amount", {
+        invoiceId: invoiceIdToUpdate,
+        sessionId: session.id,
+      });
+      return;
+    }
+    const amountTotal = fromStripeMinorUnits(amountMinor, currency);
+
     // Update invoice status to paid
     await prisma.invoice.update({
       where: { id: invoiceIdToUpdate },
@@ -245,6 +278,22 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
     logger.info(`Invoice ${invoiceIdToUpdate} marked as paid`);
   }
+}
+
+/** Validates immutable checkout metadata against Stripe's completed amount and currency. */
+function checkoutMatchesRecord(
+  session: Stripe.Checkout.Session,
+  currency: string,
+  amountMinor: number,
+): boolean {
+  const metadataCurrency = session.metadata?.currency?.toUpperCase();
+  const metadataAmount = session.metadata?.amountMinor;
+  return (
+    metadataCurrency === currency &&
+    metadataAmount === String(amountMinor) &&
+    session.currency?.toUpperCase() === currency &&
+    session.amount_total === amountMinor
+  );
 }
 
 /**

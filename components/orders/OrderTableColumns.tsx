@@ -30,6 +30,7 @@ import { IoMdArrowDown, IoMdArrowUp } from "react-icons/io";
 import { format } from "date-fns";
 import Link from "next/link";
 import OrderActions from "./OrderActions";
+import { formatMoney } from "@/lib/money";
 
 /**
  * Get order status badge color
@@ -251,9 +252,9 @@ export const createOrderColumns = (
   {
     accessorKey: "total",
     header: ({ column }) => <SortableHeader column={column} label="Total" />,
-    cell: ({ getValue }) => {
+    cell: ({ getValue, row }) => {
       const total = getValue<number>();
-      return <span className="font-semibold">${total.toFixed(2)}</span>;
+      return <span className="font-semibold">{formatMoney(total, row.original.currency)}</span>;
     },
   },
   {

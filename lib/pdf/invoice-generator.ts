@@ -190,8 +190,8 @@ export function generateInvoicePDF(data: InvoicePDFData): string {
       item.productName,
       item.sku || "-",
       item.quantity.toString(),
-      formatCurrency(item.price),
-      formatCurrency(item.subtotal),
+      formatCurrency(item.price, data.currency),
+      formatCurrency(item.subtotal, data.currency),
     ]);
 
     autoTable(doc, {
@@ -236,7 +236,7 @@ export function generateInvoicePDF(data: InvoicePDFData): string {
   // Subtotal
   doc.text("Subtotal:", summaryX, summaryY);
   doc.setTextColor(...darkColor);
-  doc.text(formatCurrency(data.subtotal), summaryValueX, summaryY, {
+  doc.text(formatCurrency(data.subtotal, data.currency), summaryValueX, summaryY, {
     align: "right",
   });
 
@@ -246,7 +246,7 @@ export function generateInvoicePDF(data: InvoicePDFData): string {
     doc.setTextColor(...grayColor);
     doc.text("Tax:", summaryX, summaryY);
     doc.setTextColor(...darkColor);
-    doc.text(formatCurrency(data.tax), summaryValueX, summaryY, {
+    doc.text(formatCurrency(data.tax, data.currency), summaryValueX, summaryY, {
       align: "right",
     });
   }
@@ -257,7 +257,7 @@ export function generateInvoicePDF(data: InvoicePDFData): string {
     doc.setTextColor(...grayColor);
     doc.text("Shipping:", summaryX, summaryY);
     doc.setTextColor(...darkColor);
-    doc.text(formatCurrency(data.shipping), summaryValueX, summaryY, {
+    doc.text(formatCurrency(data.shipping, data.currency), summaryValueX, summaryY, {
       align: "right",
     });
   }
@@ -268,7 +268,7 @@ export function generateInvoicePDF(data: InvoicePDFData): string {
     doc.setTextColor(...grayColor);
     doc.text("Discount:", summaryX, summaryY);
     doc.setTextColor(34, 197, 94);
-    doc.text(`-${formatCurrency(data.discount)}`, summaryValueX, summaryY, {
+    doc.text(`-${formatCurrency(data.discount, data.currency)}`, summaryValueX, summaryY, {
       align: "right",
     });
   }
@@ -281,7 +281,7 @@ export function generateInvoicePDF(data: InvoicePDFData): string {
   doc.setTextColor(...darkColor);
   doc.text("Total:", summaryX, summaryY + 4);
   doc.setFont("helvetica", "bold");
-  doc.text(formatCurrency(data.total), summaryValueX, summaryY + 4, {
+  doc.text(formatCurrency(data.total, data.currency), summaryValueX, summaryY + 4, {
     align: "right",
   });
 
@@ -292,7 +292,7 @@ export function generateInvoicePDF(data: InvoicePDFData): string {
   doc.setTextColor(...grayColor);
   doc.text("Amount Paid:", summaryX, summaryY);
   doc.setTextColor(...darkColor);
-  doc.text(formatCurrency(data.amountPaid), summaryValueX, summaryY, {
+  doc.text(formatCurrency(data.amountPaid, data.currency), summaryValueX, summaryY, {
     align: "right",
   });
 
@@ -306,7 +306,7 @@ export function generateInvoicePDF(data: InvoicePDFData): string {
     doc.setTextColor(34, 197, 94); // Green for paid
   }
   doc.setFont("helvetica", "bold");
-  doc.text(formatCurrency(data.amountDue), summaryValueX, summaryY, {
+  doc.text(formatCurrency(data.amountDue, data.currency), summaryValueX, summaryY, {
     align: "right",
   });
 

@@ -14,6 +14,7 @@ import { prisma } from "@/prisma/client";
 import { sendInvoiceEmail } from "@/lib/email/notifications";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
 import type { InvoiceEmailData, BillingAddress } from "@/types";
+import { resolveTransactionCurrency } from "@/lib/money";
 
 /**
  * POST /api/invoices/reminders
@@ -163,6 +164,7 @@ export async function POST(request: NextRequest) {
           total: invoice.total,
           amountPaid: invoice.amountPaid,
           amountDue: invoice.amountDue,
+          currency: resolveTransactionCurrency(invoice.currency),
           paymentLink: invoice.paymentLink || undefined,
           invoiceUrl: `${
             process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_LOCAL_API_URL || "http://localhost:3000"

@@ -4,6 +4,7 @@
  */
 
 import { z } from "zod";
+import { transactionCurrencySchema } from "./order";
 
 /**
  * Create Invoice Schema
@@ -11,6 +12,7 @@ import { z } from "zod";
  */
 export const createInvoiceSchema = z.object({
   orderId: z.string().min(1, "Order ID is required"),
+  currency: transactionCurrencySchema.optional(),
   dueDate: z.string().datetime("Invalid due date format").or(z.string().date("Invalid due date format")),
   tax: z.number().min(0, "Tax cannot be negative").optional(),
   shipping: z.number().min(0, "Shipping cannot be negative").optional(),

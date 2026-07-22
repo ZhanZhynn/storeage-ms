@@ -51,6 +51,7 @@ export type {
   OrderItem,
   OrderStatus,
   PaymentStatus,
+  TransactionCurrency,
   ShippingAddress,
   BillingAddress,
   CreateOrderInput,

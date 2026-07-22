@@ -9,6 +9,7 @@ import { logger } from "@/lib/logger";
 import { prisma } from "@/prisma/client";
 import { generateInvoicePDF } from "@/lib/pdf";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
+import { resolveTransactionCurrency } from "@/lib/money";
 
 /**
  * GET /api/invoices/[id]/pdf
@@ -72,6 +73,7 @@ export async function GET(
       total: invoice.total,
       amountPaid: invoice.amountPaid,
       amountDue: invoice.amountDue,
+      currency: resolveTransactionCurrency(invoice.currency),
       clientName,
       billingAddress: invoice.billingAddress as {
         name?: string;

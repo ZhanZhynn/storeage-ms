@@ -83,6 +83,7 @@ export {
   updateOrderSchema,
   shippingAddressSchema,
   billingAddressSchema,
+  transactionCurrencySchema,
   orderItemSchema,
   type CreateOrderFormData,
   type UpdateOrderFormData,
