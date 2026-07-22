@@ -131,9 +131,15 @@ export const API_ENDPOINTS = {
   sourcing: {
     cases: "/sourcing/cases",
     case: (id: string) => `/sourcing/cases/${id}`,
+    comments: (id: string) => `/sourcing/cases/${id}/comments`,
     commands: (id: string) => `/sourcing/cases/${id}/commands`,
     workspaces: "/workspaces",
     members: (id: string) => `/workspaces/${id}/members`,
+    templates: "/sourcing/templates",
+    duplicates: "/sourcing/duplicates",
+    analytics: "/sourcing/analytics",
+    supplierScorecard: "/sourcing/supplier-scorecard",
+    landedCost: "/sourcing/landed-cost",
   },
 
   // Executive KPI

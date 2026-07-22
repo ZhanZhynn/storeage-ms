@@ -172,7 +172,7 @@ export { useShopeeAds } from "./use-shopee-ads";
 
 // Receiving hooks
 export { useReceiveItems, useStockMovements, useProductLookup } from "./use-receiving";
-export { useSourcingWorkspaces, useSourcingMembers, useSourcingSuppliers, useSourcingCases, useSourcingCase, useCreateSourcingCase, useSourcingCommand } from "./use-sourcing";
+export { useSourcingWorkspaces, useSourcingMembers, useSourcingSuppliers, useSourcingCases, useSourcingCase, useSourcingTemplates, useSourcingDuplicates, useSourcingAnalytics, useSupplierScorecard, useCreateSourcingCase, useCreateSourcingTemplate, useLandedCostEstimate, useUpdateSourcingNextAction, useSourcingCommand, useCreateSourcingComment } from "./use-sourcing";
 
 // Portal hooks (external supplier/client portals)
 export {

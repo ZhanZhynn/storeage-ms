@@ -24,6 +24,10 @@ const optionalDate = z.preprocess(
   (value) => (value === "" ? undefined : value),
   z.string().trim().min(1).optional().nullable(),
 );
+const optionalDateTime = z.preprocess(
+  (value) => (value === "" ? null : value),
+  z.coerce.date().optional().nullable(),
+);
 
 export const sourcingCaseSchema = z.object({
   workspaceId: z.string().min(1, "Workspace is required"),
@@ -61,6 +65,7 @@ export const sourcingCommandSchema = z
   .object({
     action: z.enum([
       "assign",
+      "create_quote",
       "save_quote",
       "submit_quote",
       "request_changes",
@@ -81,6 +86,12 @@ export const sourcingCommandSchema = z
     reason: z.string().trim().min(1).max(2000).optional(),
   })
   .superRefine((value, context) => {
+    if (["create_quote", "save_quote", "submit_quote"].includes(value.action) && !value.quote) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["quote"], message: "A valid quote is required" });
+    }
+    if (["save_quote", "submit_quote", "request_changes", "approve", "reject"].includes(value.action) && !value.quoteId) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["quoteId"], message: "A quote must be selected" });
+    }
     if (
       ["reject", "cannot_source"].includes(value.action) &&
       !value.reason?.trim()
@@ -100,5 +111,20 @@ export const sourcingCommandSchema = z
     }
   });
 
+export const sourcingCommentSchema = z.object({
+  body: z.string().trim().min(1, "Comment is required").max(4000),
+  mentionedUserIds: z.array(z.string().min(1)).max(50).default([])
+    .refine((ids) => new Set(ids).size === ids.length, "Mentioned users must be unique"),
+});
+
+export const sourcingNextActionSchema = z.object({
+  version: z.number().int().positive(),
+  nextAction: optionalText(500),
+  nextActionAt: optionalDateTime,
+  slaDueAt: optionalDateTime,
+});
+
 export type SourcingCaseInput = z.infer<typeof sourcingCaseSchema>;
 export type SourcingQuoteInput = z.infer<typeof sourcingQuoteSchema>;
+export type SourcingCommentInput = z.infer<typeof sourcingCommentSchema>;
+export type SourcingNextActionInput = z.infer<typeof sourcingNextActionSchema>;

@@ -37,6 +37,8 @@ interface PendingItem {
   poItemId?: string;
   imageUrl?: string;
   source: "scan" | "po";
+  qualityStatus?: "accepted" | "conditional" | "rejected";
+  qualityNotes?: string;
 }
 
 export default function ScanToReceivePanel() {
@@ -92,6 +94,7 @@ export default function ScanToReceivePanel() {
       prev.map((pending) => (pending === item ? { ...pending, quantity: Math.max(1, qty) } : pending)),
     );
   };
+  const updateQuality = (item: PendingItem, data: Partial<PendingItem>) => setPendingItems((prev) => prev.map((pending) => pending === item ? { ...pending, ...data } : pending));
 
   const removeItem = (item: PendingItem) => {
     setPendingItems((prev) => prev.filter((pending) => pending !== item));
@@ -131,6 +134,8 @@ export default function ScanToReceivePanel() {
           sku: p.sku,
           quantity: p.quantity,
           poItemId: p.poItemId,
+          qualityStatus: p.qualityStatus,
+          qualityNotes: p.qualityNotes,
         })),
       },
       {
@@ -244,7 +249,7 @@ export default function ScanToReceivePanel() {
                   <TableHead>Product</TableHead>
                   <TableHead>SKU</TableHead>
                   <TableHead>Source</TableHead>
-                  <TableHead className="w-24">Qty</TableHead>
+                  <TableHead className="w-24">Qty</TableHead><TableHead>Quality</TableHead><TableHead>Inspection notes</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
@@ -258,6 +263,8 @@ export default function ScanToReceivePanel() {
                         {item.source === "po" ? "PO" : "Scan"}
                       </Badge>
                     </TableCell>
+                    <TableCell><Select value={item.qualityStatus || "accepted"} onValueChange={(qualityStatus: "accepted" | "conditional" | "rejected") => updateQuality(item, { qualityStatus })}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="accepted">Accepted</SelectItem><SelectItem value="conditional">Conditional</SelectItem><SelectItem value="rejected">Rejected</SelectItem></SelectContent></Select></TableCell>
+                    <TableCell><Input value={item.qualityNotes || ""} onChange={(event) => updateQuality(item, { qualityNotes: event.target.value })} maxLength={2000} placeholder="Damage or inspection note" /></TableCell>
                     <TableCell>
                       <Input
                         type="number"

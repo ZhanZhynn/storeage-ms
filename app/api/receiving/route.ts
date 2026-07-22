@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
         await tx.purchaseOrder.update({ where: { id: po.id }, data: { updatedAt: new Date(), updatedBy: user.id } });
       }
       const results: ReceivedItemResult[] = [];
-      const receiptItems: { purchaseOrderItemId: string; productId: string; acceptedQuantity: number; damagedQuantity: number; shortageQuantity: number; notes?: string }[] = [];
+      const receiptItems: { purchaseOrderItemId: string; productId: string; acceptedQuantity: number; damagedQuantity: number; shortageQuantity: number; qualityStatus?: string; qualityNotes?: string; inspectionPhotoUrls?: string[]; notes?: string }[] = [];
       const pendingByPoItem = new Map<string, number>();
       for (const item of items) {
         const accepted = item.acceptedQuantity ?? item.quantity ?? 0;
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
           if (poItem.quantityReceived + newTotal > poItem.quantity) throw new SourcingAccessError(`Receipt exceeds ordered quantity for ${poItem.sku ?? poItem.productName}`, 409);
           pendingByPoItem.set(poItem.id, newTotal);
           poItemStatus = { quantityOrdered: poItem.quantity, quantityReceived: poItem.quantityReceived + newTotal, fullyReceived: poItem.quantityReceived + newTotal === poItem.quantity };
-          receiptItems.push({ purchaseOrderItemId: poItem.id, productId: item.productId, acceptedQuantity: accepted, damagedQuantity: item.damagedQuantity, shortageQuantity: item.shortageQuantity, notes: item.notes });
+          receiptItems.push({ purchaseOrderItemId: poItem.id, productId: item.productId, acceptedQuantity: accepted, damagedQuantity: item.damagedQuantity, shortageQuantity: item.shortageQuantity, qualityStatus: item.qualityStatus, qualityNotes: item.qualityNotes, inspectionPhotoUrls: item.inspectionPhotoUrls, notes: item.notes });
         }
         let stock = product.quantity;
         if (accepted > 0) {

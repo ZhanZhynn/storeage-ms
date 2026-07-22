@@ -11,7 +11,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const limited = await withRateLimit(request, defaultRateLimits.strict, user.id);
     if (limited) return limited;
     const workspaceId = (await params).id;
-    await requireWorkspaceRole(user, workspaceId, ["admin"]);
+    await requireWorkspaceRole(user, workspaceId, ["admin", "sourcer"]);
     const members = await prisma.workspaceMember.findMany({
       where: { workspaceId }, orderBy: { role: "asc" },
       select: { userId: true, role: true, user: { select: { name: true, email: true, image: true } } },

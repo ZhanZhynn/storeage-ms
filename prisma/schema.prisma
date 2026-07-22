@@ -319,6 +319,7 @@ model User {
   workspaceMemberships WorkspaceMember[]
   sentWorkspaceInvitations WorkspaceInvitation[] @relation("WorkspaceInvitationSender")
   ownedWorkspaces Workspace[] @relation("WorkspaceOwner")
+  sourcingComments SourcingComment[]
 }
 
 model UserAction {
@@ -346,6 +347,7 @@ model Workspace {
   sourcingQuotes SourcingQuote[]
   sourcingOrders SourcingOrder[]
   sourcingEvents SourcingEvent[]
+  sourcingComments SourcingComment[]
   purchaseReceipts PurchaseReceipt[]
   invitations WorkspaceInvitation[]
 
@@ -404,6 +406,9 @@ model SourcingCase {
   stage String @default("draft")
   version Int @default(1)
   assignedToId String? @db.ObjectId
+  nextAction String?
+  nextActionAt DateTime? @db.Date
+  slaDueAt DateTime? @db.Date
   createdById String @db.ObjectId
   archivedAt DateTime? @db.Date
   createdAt DateTime @default(now()) @db.Date
@@ -412,16 +417,32 @@ model SourcingCase {
   quotes SourcingQuote[]
   orders SourcingOrder[]
   events SourcingEvent[]
+  comments SourcingComment[]
   receipts PurchaseReceipt[]
 
   @@index([workspaceId, stage])
   @@index([workspaceId, assignedToId])
+  @@index([workspaceId, nextActionAt])
+  @@index([workspaceId, slaDueAt])
+}
+
+model SourcingReminder {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  caseId String @db.ObjectId
+  userId String @db.ObjectId
+  reminderDate DateTime @db.Date
+  createdAt DateTime @default(now()) @db.Date
+
+  @@unique([caseId, userId, reminderDate])
+  @@index([reminderDate])
 }
 
 model SourcingQuote {
   id String @id @default(auto()) @map("_id") @db.ObjectId
   workspaceId String @db.ObjectId
   caseId String @db.ObjectId
+  // Stable supplier-offer identity; existing quotes are treated as their own group until backfilled.
+  quoteGroupId String? @db.ObjectId
   revision Int
   status String @default("draft")
   supplierName String
@@ -452,6 +473,7 @@ model SourcingQuote {
 
   @@unique([caseId, revision])
   @@index([workspaceId, caseId])
+  @@index([caseId, quoteGroupId])
 }
 
 model SourcingOrder {
@@ -486,6 +508,23 @@ model SourcingEvent {
   @@index([workspaceId, createdAt])
 }
 
+model SourcingComment {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  workspaceId String @db.ObjectId
+  caseId String @db.ObjectId
+  authorId String @db.ObjectId
+  body String
+  mentionedUserIds Json?
+  createdAt DateTime @default(now()) @db.Date
+  updatedAt DateTime? @db.Date
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sourcingCase SourcingCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id])
+
+  @@index([caseId, createdAt])
+  @@index([workspaceId, createdAt])
+}
+
 model PurchaseReceipt {
   id String @id @default(auto()) @map("_id") @db.ObjectId
   workspaceId String @db.ObjectId
@@ -512,11 +551,28 @@ model PurchaseReceiptItem {
   acceptedQuantity Int @default(0)
   damagedQuantity Int @default(0)
   shortageQuantity Int @default(0)
+  qualityStatus String? // accepted | conditional | rejected
+  qualityNotes String?
+  inspectionPhotoUrls Json?
   notes String?
   receipt PurchaseReceipt @relation(fields: [purchaseReceiptId], references: [id], onDelete: Cascade)
 
   @@index([purchaseReceiptId])
   @@index([purchaseOrderItemId])
+}
+
+// Reusable, workspace-scoped starting points for common sourcing requests.
+model SourcingTemplate {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  workspaceId String @db.ObjectId
+  name String
+  data Json
+  createdById String @db.ObjectId
+  createdAt DateTime @default(now()) @db.Date
+  updatedAt DateTime? @db.Date
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
 }
 
 model VerificationToken {

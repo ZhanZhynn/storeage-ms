@@ -6,9 +6,11 @@ import { isBrevoConfigured, sendEmailViaBrevo } from "@/lib/email/brevo";
 import { requireWorkspaceRole, SourcingAccessError } from "./auth";
 import type {
   SourcingCaseInput,
+  SourcingNextActionInput,
   SourcingQuoteInput,
 } from "@/lib/validations/sourcing";
-import { nextQuoteRevision } from "./workflow";
+import { quoteGroupKey } from "./workflow";
+import { ObjectId } from "mongodb";
 import { convertMoney } from "@/lib/money";
 import { getCurrentExchangeRate, isExchangeRateFresh } from "@/lib/exchange-rates/service";
 
@@ -24,6 +26,7 @@ type QuoteItem = {
 type Command = {
   action:
     | "assign"
+    | "create_quote"
     | "save_quote"
     | "submit_quote"
     | "request_changes"
@@ -192,6 +195,41 @@ export async function createSourcingCase(
   return sourcingCase;
 }
 
+export async function updateSourcingNextAction(
+  actor: Actor,
+  caseId: string,
+  input: SourcingNextActionInput,
+) {
+  const current = await prisma.sourcingCase.findUnique({ where: { id: caseId } });
+  if (!current) throw new SourcingAccessError("Sourcing case not found", 404);
+  const access = await requireWorkspaceRole(actor, current.workspaceId, ["admin", "sourcer"]);
+  if (!access.globalAdmin && access.role !== "admin" && current.assignedToId !== actor.id) {
+    throw new SourcingAccessError("Only the assigned sourcer can update this case");
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const item = await tx.sourcingCase.findUnique({ where: { id: caseId } });
+    if (!item) throw new SourcingAccessError("Sourcing case not found", 404);
+    assertVersion(input.version, item.version);
+    const updated = await tx.sourcingCase.update({
+      where: { id: caseId },
+      data: {
+        nextAction: input.nextAction?.trim() || null,
+        nextActionAt: input.nextActionAt ?? null,
+        slaDueAt: input.slaDueAt ?? null,
+        version: { increment: 1 },
+        updatedAt: new Date(),
+      },
+    });
+    await event(tx, caseId, item.workspaceId, actor.id, "next_action_updated", {
+      nextAction: updated.nextAction,
+      nextActionAt: updated.nextActionAt,
+      slaDueAt: updated.slaDueAt,
+    });
+    return updated;
+  });
+}
+
 export async function runSourcingCommand(
   actor: Actor,
   caseId: string,
@@ -256,19 +294,18 @@ export async function runSourcingCommand(
       });
       return updated;
     }
-    if (["save_quote", "submit_quote"].includes(command.action)) {
+    if (["create_quote", "save_quote", "submit_quote"].includes(command.action)) {
       requireAssigned();
       if (!editableStages.includes(item.stage))
         throw new SourcingAccessError(
           "Quotes cannot be changed at this stage",
           409,
         );
-      const latest = await tx.sourcingQuote.findFirst({
-        where: { caseId },
-        orderBy: { revision: "desc" },
-      });
       if (!command.quote)
         throw new SourcingAccessError("A valid quote is required", 400);
+      if (["save_quote", "submit_quote"].includes(command.action) && !command.quoteId)
+        throw new SourcingAccessError("A quote must be selected", 400);
+      const latest = await tx.sourcingQuote.findFirst({ where: { caseId }, orderBy: { revision: "desc" } });
       const quoteInput = command.quote;
       const quoteData = {
         supplierName: quoteInput.supplierName.trim(),
@@ -294,12 +331,18 @@ export async function runSourcingCommand(
         samplePhotoUrls: json(quoteInput.samplePhotoUrls),
         notes: quoteInput.remarks?.trim() || null,
       };
-      const revision = nextQuoteRevision(latest);
+      // Revisions remain case-wide for the existing unique constraint; groups identify an offer.
+      const revision = (latest?.revision ?? 0) + 1;
       // A draft is the editable working copy. Revisions are created only after submission or a change request.
+      const target = command.quoteId
+        ? await tx.sourcingQuote.findFirst({ where: { id: command.quoteId, caseId, status: "draft" } })
+        : null;
+      if (command.quoteId && !target)
+        throw new SourcingAccessError("The selected quote is not an editable draft", 409);
       const quote =
-        latest?.status === "draft"
+        command.action !== "create_quote" && target
           ? await tx.sourcingQuote.update({
-              where: { id: latest.id },
+              where: { id: target.id },
               data: {
                 ...quoteData,
                 status:
@@ -312,12 +355,11 @@ export async function runSourcingCommand(
               data: {
                 workspaceId: item.workspaceId,
                 caseId,
+                quoteGroupId: new ObjectId().toHexString(),
                 revision,
                 status:
-                  command.action === "submit_quote" ? "submitted" : "draft",
+                  "draft",
                 ...quoteData,
-                submittedAt:
-                  command.action === "submit_quote" ? new Date() : undefined,
                 createdById: actor.id,
               },
             });
@@ -325,8 +367,8 @@ export async function runSourcingCommand(
         stage: command.action === "submit_quote" ? "quoted" : item.stage,
       });
       await event(tx, caseId, item.workspaceId, actor.id, command.action, {
-        quoteId: quote.id,
-        revision,
+         quoteId: quote.id,
+         revision: quote.revision,
       });
       return updated;
     }
@@ -349,12 +391,10 @@ export async function runSourcingCommand(
         throw new SourcingAccessError(
           "Only workspace admins can make a sourcing decision",
         );
-       const latestSubmitted = await tx.sourcingQuote.findFirst({
-         where: command.quoteId
-           ? { id: command.quoteId, caseId, status: "submitted" }
-           : { caseId, status: "submitted" },
-         orderBy: { revision: "desc" },
-       });
+       const latestSubmitted = command.quoteId
+         ? await tx.sourcingQuote.findFirst({ where: { id: command.quoteId, caseId, status: "submitted" } })
+         : null;
+       const latest = await tx.sourcingQuote.findFirst({ where: { caseId }, orderBy: { revision: "desc" } });
       if (
         ["request_changes", "approve", "reject", "cannot_source"].includes(
           command.action,
@@ -363,7 +403,7 @@ export async function runSourcingCommand(
         command.action !== "cannot_source"
       )
         throw new SourcingAccessError("A submitted quote is required", 409);
-      if (command.action === "request_changes") {
+       if (command.action === "request_changes") {
         if (item.stage !== "quoted")
           throw new SourcingAccessError(
             "Only quoted cases can request changes",
@@ -374,11 +414,12 @@ export async function runSourcingCommand(
             "Change request reason is required",
             400,
           );
-        const copied = await tx.sourcingQuote.create({
+         const copied = await tx.sourcingQuote.create({
           data: {
             workspaceId: item.workspaceId,
             caseId,
-             revision: (latestSubmitted?.revision ?? 0) + 1,
+              quoteGroupId: quoteGroupKey(latestSubmitted!),
+              revision: (latest?.revision ?? 0) + 1,
             status: "draft",
              supplierName: latestSubmitted!.supplierName,
              supplierId: latestSubmitted!.supplierId,
@@ -397,8 +438,8 @@ export async function runSourcingCommand(
           },
         });
         await tx.sourcingQuote.update({
-           where: { id: latestSubmitted!.id },
-          data: { status: "superseded" },
+            where: { id: latestSubmitted!.id },
+           data: { status: "superseded", quoteGroupId: quoteGroupKey(latestSubmitted!) },
         });
         const updated = await bump({ stage: "changes_requested" });
         await event(

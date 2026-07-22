@@ -4,7 +4,7 @@ import {
   sourcingCommandSchema,
   sourcingQuoteSchema,
 } from "@/lib/validations/sourcing";
-import { canEditQuote, nextQuoteRevision } from "./workflow";
+import { canEditQuote, nextQuoteRevision, quoteGroupKey } from "./workflow";
 
 describe("sourcing workflow semantics", () => {
   it("keeps an active draft revision and increments after submission", () => {
@@ -17,6 +17,10 @@ describe("sourcing workflow semantics", () => {
       false,
     );
     expect(canEditQuote("sourcer", false, "me", "me", "quoted")).toBe(false);
+  });
+  it("uses a legacy quote ID as its offer group until it is backfilled", () => {
+    expect(quoteGroupKey({ id: "legacy", quoteGroupId: null })).toBe("legacy");
+    expect(quoteGroupKey({ id: "revision", quoteGroupId: "offer" })).toBe("offer");
   });
   it("validates one-product request and structured RMB quote input", () => {
     expect(
@@ -111,5 +115,8 @@ describe("sourcing workflow semantics", () => {
         fxRateOverride: 0.61,
       }).success,
     ).toBe(false);
+    expect(sourcingCommandSchema.safeParse({ action: "approve", version: 1 }).success).toBe(false);
+    expect(sourcingCommandSchema.safeParse({ action: "create_quote", version: 1 }).success).toBe(false);
+    expect(sourcingCommandSchema.safeParse({ action: "save_quote", version: 1, quote: { supplierName: "Yiwu Co", unitPriceRmb: 1 } }).success).toBe(false);
   });
 });

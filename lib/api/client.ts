@@ -1142,8 +1142,17 @@ class ApiClient {
     suppliers: async (workspaceId: string) => this.client.get(`${API_ENDPOINTS.suppliers.base}?workspaceId=${encodeURIComponent(workspaceId)}`).then((response) => ({ data: response.data, status: response.status, statusText: response.statusText })),
     cases: async (workspaceId: string) => this.client.get(`${API_ENDPOINTS.sourcing.cases}?workspaceId=${encodeURIComponent(workspaceId)}`).then((response) => ({ data: response.data, status: response.status, statusText: response.statusText })),
     case: async (id: string) => this.client.get(API_ENDPOINTS.sourcing.case(id)).then((response) => ({ data: response.data, status: response.status, statusText: response.statusText })),
+    comments: async (id: string) => this.client.get(API_ENDPOINTS.sourcing.comments(id)).then((response) => ({ data: response.data, status: response.status, statusText: response.statusText })),
+    addComment: async (id: string, data: { body: string; mentionedUserIds?: string[] }) => this.client.post(API_ENDPOINTS.sourcing.comments(id), data).then((response) => ({ data: response.data, status: response.status, statusText: response.statusText })),
     create: async (data: Record<string, unknown>) => this.client.post(API_ENDPOINTS.sourcing.cases, data).then((response) => ({ data: response.data, status: response.status, statusText: response.statusText })),
+    updateNextAction: async (id: string, data: Record<string, unknown>) => this.client.patch(API_ENDPOINTS.sourcing.case(id), data).then((response) => ({ data: response.data, status: response.status, statusText: response.statusText })),
     command: async (id: string, data: Record<string, unknown>) => this.client.post(API_ENDPOINTS.sourcing.commands(id), data).then((response) => ({ data: response.data, status: response.status, statusText: response.statusText })),
+    templates: async (workspaceId: string) => this.client.get(`${API_ENDPOINTS.sourcing.templates}?workspaceId=${encodeURIComponent(workspaceId)}`).then((response) => ({ data: response.data, status: response.status, statusText: response.statusText })),
+    createTemplate: async (data: Record<string, unknown>) => this.client.post(API_ENDPOINTS.sourcing.templates, data).then((response) => ({ data: response.data, status: response.status, statusText: response.statusText })),
+    duplicates: async (workspaceId: string, title: string) => this.client.get(`${API_ENDPOINTS.sourcing.duplicates}?workspaceId=${encodeURIComponent(workspaceId)}&title=${encodeURIComponent(title)}`).then((response) => ({ data: response.data, status: response.status, statusText: response.statusText })),
+    analytics: async (workspaceId: string) => this.client.get(`${API_ENDPOINTS.sourcing.analytics}?workspaceId=${encodeURIComponent(workspaceId)}`).then((response) => ({ data: response.data, status: response.status, statusText: response.statusText })),
+    supplierScorecard: async (workspaceId: string) => this.client.get(`${API_ENDPOINTS.sourcing.supplierScorecard}?workspaceId=${encodeURIComponent(workspaceId)}`).then((response) => ({ data: response.data, status: response.status, statusText: response.statusText })),
+    landedCost: async (data: Record<string, unknown>) => this.client.post(API_ENDPOINTS.sourcing.landedCost, data).then((response) => ({ data: response.data, status: response.status, statusText: response.statusText })),
   };
 
   /**

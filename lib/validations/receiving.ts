@@ -7,6 +7,9 @@ export const receiveItemSchema = z.object({
   acceptedQuantity: z.number().int().nonnegative().optional(),
   damagedQuantity: z.number().int().nonnegative().default(0),
   shortageQuantity: z.number().int().nonnegative().default(0),
+  qualityStatus: z.enum(["accepted", "conditional", "rejected"]).optional(),
+  qualityNotes: z.string().trim().max(2000).optional(),
+  inspectionPhotoUrls: z.array(z.string().url()).max(8).optional(),
   poItemId: z.string().optional(),
   notes: z.string().optional(),
 }).superRefine((item, context) => {
