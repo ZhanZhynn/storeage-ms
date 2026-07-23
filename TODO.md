@@ -2,10 +2,10 @@
 
 ## SLA And Escalation
 
-- [ ] Add workspace-configurable SLA rules for first response, quote submission, approval, and shipment.
-- [ ] Add workspace business hours and timezone handling for due-date calculations.
-- [ ] Add escalation recipients and escalation thresholds for overdue cases.
-- [ ] Add SLA performance reporting: on-time rate, breach counts, and time waiting by owner.
+- [x] Add workspace-configurable SLA rules for first response, quote submission, approval, and shipment.
+- [x] Add workspace business hours and timezone handling for due-date calculations.
+- [x] Add escalation recipients and escalation thresholds for overdue cases.
+- [x] Add SLA performance reporting: on-time rate, breach counts, and time waiting by owner.
 
 ## Currency Completeness
 

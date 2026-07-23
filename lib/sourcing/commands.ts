@@ -12,6 +12,7 @@ import { quoteGroupKey } from "./workflow";
 import { ObjectId } from "mongodb";
 import { convertMoney } from "@/lib/money";
 import { getCurrentExchangeRate, isExchangeRateFresh } from "@/lib/exchange-rates/service";
+import { completeSourcingSla, dueAtForSourcingSla, normalizeSourcingSlaConfig } from "./sla";
 
 type Actor = { id: string; role: string | null; email: string; name: string };
 type QuoteItem = {
@@ -91,7 +92,7 @@ export async function createSourcingCase(
     throw new SourcingAccessError("Title is required", 400);
   const assignedToId = input.assignedToId || (access.role === "sourcer" ? actor.id : null);
   if (assignedToId) {
-    if (!access.globalAdmin && access.role !== "admin")
+    if (input.assignedToId && !access.globalAdmin && access.role !== "admin")
       throw new SourcingAccessError("Only workspace admins can assign cases");
     const member = await prisma.workspaceMember.findUnique({
       where: {
@@ -107,6 +108,11 @@ export async function createSourcingCase(
         400,
       );
   }
+  const workspace = await prisma.workspace.findUnique({ where: { id: input.workspaceId }, select: { sourcingSlaConfig: true } });
+  const slaConfig = normalizeSourcingSlaConfig(workspace?.sourcingSlaConfig);
+  const startedAt = new Date();
+  const firstResponseDueAt = dueAtForSourcingSla("first_response", startedAt, slaConfig);
+  const quoteDueAt = dueAtForSourcingSla("quote_submission", startedAt, slaConfig);
   const sourcingCase = await prisma.$transaction(async (tx) => {
     const created = await tx.sourcingCase.create({
       data: {
@@ -126,9 +132,19 @@ export async function createSourcingCase(
         assignedToId,
         createdById: actor.id,
         stage: assignedToId ? "sourcing" : "draft",
+        slaDueAt: assignedToId ? quoteDueAt : firstResponseDueAt,
+        slaRule: assignedToId ? "quote_submission" : "first_response",
       },
       include: listInclude,
     });
+    await tx.sourcingSlaRecord.create({ data: {
+      workspaceId: input.workspaceId, caseId: created.id, rule: "first_response", ownerId: assignedToId,
+      startedAt, dueAt: firstResponseDueAt, completedAt: assignedToId ? startedAt : null, onTime: assignedToId ? true : null,
+    } });
+    if (assignedToId) await tx.sourcingSlaRecord.create({ data: {
+      workspaceId: input.workspaceId, caseId: created.id, rule: "quote_submission", ownerId: assignedToId,
+      startedAt, dueAt: quoteDueAt,
+    } });
     await event(tx, created.id, input.workspaceId, actor.id, "case_created", {
       assignedToId,
     });
@@ -175,6 +191,12 @@ export async function updateSourcingNextAction(
         updatedAt: new Date(),
       },
     });
+    if (input.slaDueAt) {
+      await tx.sourcingSlaRecord.updateMany({
+        where: { caseId, completedAt: null },
+        data: { dueAt: input.slaDueAt },
+      });
+    }
     await event(tx, caseId, item.workspaceId, actor.id, "next_action_updated", {
       nextAction: updated.nextAction,
       nextActionAt: updated.nextActionAt,
@@ -193,6 +215,8 @@ export async function runSourcingCommand(
     where: { id: caseId },
   });
   if (!current) throw new SourcingAccessError("Sourcing case not found", 404);
+  const workspace = await prisma.workspace.findUnique({ where: { id: current.workspaceId }, select: { sourcingSlaConfig: true } });
+  const slaConfig = normalizeSourcingSlaConfig(workspace?.sourcingSlaConfig);
   const access = await requireWorkspaceRole(actor, current.workspaceId, [
     "admin",
     "sourcer",
@@ -239,9 +263,20 @@ export async function runSourcingCommand(
           "Assignee must be a sourcing member",
           400,
         );
+      const now = new Date();
+      let slaData: Prisma.SourcingCaseUpdateInput = {};
+      if (!item.assignedToId) {
+        await completeSourcingSla(tx, caseId, "first_response", now);
+        const dueAt = dueAtForSourcingSla("quote_submission", now, slaConfig);
+        await tx.sourcingSlaRecord.create({ data: { workspaceId: item.workspaceId, caseId, rule: "quote_submission", ownerId: command.assigneeId, startedAt: now, dueAt } });
+        slaData = { slaDueAt: dueAt, slaRule: "quote_submission" };
+      } else {
+        await tx.sourcingSlaRecord.updateMany({ where: { caseId, completedAt: null }, data: { ownerId: command.assigneeId } });
+      }
       const updated = await bump({
         assignedToId: command.assigneeId,
         stage: item.stage === "draft" ? "sourcing" : item.stage,
+        ...slaData,
       });
       await event(tx, caseId, item.workspaceId, actor.id, "assigned", {
         assigneeId: command.assigneeId,
@@ -324,8 +359,16 @@ export async function runSourcingCommand(
               },
             });
       const updated = await bump({
-        stage: command.action === "submit_quote" ? "quoted" : item.stage,
+        ...(command.action === "submit_quote" ? (() => {
+          const now = new Date();
+          return { stage: "quoted", slaDueAt: dueAtForSourcingSla("approval", now, slaConfig), slaRule: "approval" };
+        })() : { stage: item.stage }),
       });
+      if (command.action === "submit_quote") {
+        const now = new Date();
+        await completeSourcingSla(tx, caseId, "quote_submission", now);
+        await tx.sourcingSlaRecord.create({ data: { workspaceId: item.workspaceId, caseId, rule: "approval", startedAt: now, dueAt: dueAtForSourcingSla("approval", now, slaConfig) } });
+      }
       await event(tx, caseId, item.workspaceId, actor.id, command.action, {
          quoteId: quote.id,
          revision: quote.revision,
@@ -456,9 +499,11 @@ export async function runSourcingCommand(
            });
            approvalData = { selectedQuoteId: selected.id };
          }
-         const stage =
-           command.action === "approve" ? "approved" : command.action;
-         const updated = await bump({ stage, ...approvalData });
+          const stage =
+            command.action === "approve" ? "approved" : command.action;
+          const now = new Date();
+          if (["approve", "reject"].includes(command.action)) await completeSourcingSla(tx, caseId, "approval", now);
+          const updated = await bump({ stage, slaDueAt: null, slaRule: null, ...approvalData });
         await event(tx, caseId, item.workspaceId, actor.id, command.action, {
            reason: command.reason,
            quoteId: command.action === "approve" ? latestSubmitted?.id : undefined,
@@ -651,7 +696,10 @@ export async function runSourcingCommand(
           createdById: actor.id,
         },
       });
-      const updated = await bump({ stage: "ordered" });
+      const now = new Date();
+      const shipmentDueAt = dueAtForSourcingSla("shipment", now, slaConfig);
+      await tx.sourcingSlaRecord.create({ data: { workspaceId: item.workspaceId, caseId, rule: "shipment", ownerId: item.assignedToId, startedAt: now, dueAt: shipmentDueAt } });
+      const updated = await bump({ stage: "ordered", slaDueAt: shipmentDueAt, slaRule: "shipment" });
       await event(tx, caseId, item.workspaceId, actor.id, "order_confirmed", {
         purchaseOrderId: po.id,
       });

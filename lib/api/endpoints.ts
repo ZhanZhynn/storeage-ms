@@ -140,6 +140,8 @@ export const API_ENDPOINTS = {
     templates: "/sourcing/templates",
     duplicates: "/sourcing/duplicates",
     analytics: "/sourcing/analytics",
+    slaSettings: "/sourcing/sla-settings",
+    slaPerformance: "/sourcing/sla-performance",
     supplierScorecard: "/sourcing/supplier-scorecard",
     landedCost: "/sourcing/landed-cost",
     supplierEvaluations: "/sourcing/supplier-evaluations",

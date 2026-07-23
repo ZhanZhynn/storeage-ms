@@ -7,6 +7,7 @@ import { invalidateAllServerCaches } from "@/lib/cache";
 import { logger } from "@/lib/logger";
 import { requireWorkspaceRole, SourcingAccessError } from "@/lib/sourcing/auth";
 import { allocateLandedCost } from "@/lib/sourcing/landed-cost";
+import { completeSourcingSla } from "@/lib/sourcing/sla";
 import type { ReceiveResult, ReceivedItemResult } from "@/types/receiving";
 
 export async function POST(request: NextRequest) {
@@ -81,7 +82,9 @@ export async function POST(request: NextRequest) {
         if (complete) {
           await tx.purchaseOrder.update({ where: { id: po.id }, data: { status: "received", receivedAt: new Date(), updatedBy: user.id } });
           if (po.sourcingOrder?.caseId) {
-            await tx.sourcingCase.update({ where: { id: po.sourcingOrder.caseId }, data: { stage: "received", version: { increment: 1 }, updatedAt: new Date() } });
+            const now = new Date();
+            await completeSourcingSla(tx, po.sourcingOrder.caseId, "shipment", now);
+            await tx.sourcingCase.update({ where: { id: po.sourcingOrder.caseId }, data: { stage: "received", slaDueAt: null, slaRule: null, version: { increment: 1 }, updatedAt: now } });
             await tx.sourcingEvent.create({ data: { caseId: po.sourcingOrder.caseId, workspaceId: po.workspaceId!, actorId: user.id, type: "received", payload: { purchaseOrderId: po.id, poNumber: po.poNumber } } });
           }
         }

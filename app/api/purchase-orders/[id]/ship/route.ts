@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 import { authorizePurchaseOrder } from "@/prisma/purchase-order";
 import { withRateLimit, defaultRateLimits } from "@/lib/api/rate-limit";
 import { logger } from "@/lib/logger";
+import { completeSourcingSla } from "@/lib/sourcing/sla";
 
 const json = (value: unknown) =>
   JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
@@ -61,9 +62,13 @@ export async function POST(
         select: { caseId: true, workspaceId: true },
       });
       if (sourcingOrder) {
-        await prisma.sourcingCase.update({
-          where: { id: sourcingOrder.caseId },
-          data: { stage: "shipped", version: { increment: 1 }, updatedAt: new Date() },
+        await prisma.$transaction(async (tx) => {
+          const now = new Date();
+          await completeSourcingSla(tx, sourcingOrder.caseId, "shipment", now);
+          await tx.sourcingCase.update({
+            where: { id: sourcingOrder.caseId },
+            data: { stage: "shipped", slaDueAt: null, slaRule: null, version: { increment: 1 }, updatedAt: now },
+          });
         });
         await prisma.sourcingEvent.create({
           data: {

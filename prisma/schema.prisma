@@ -353,6 +353,8 @@ model Workspace {
   ownerId String @db.ObjectId
   baseCurrency String @default("MYR")
   locale String @default("en-MY")
+  // Optional so existing workspaces retain the default sourcing SLA policy.
+  sourcingSlaConfig Json?
   createdAt DateTime @default(now()) @db.Date
   updatedAt DateTime? @db.Date
   owner User @relation("WorkspaceOwner", fields: [ownerId], references: [id])
@@ -370,6 +372,7 @@ model Workspace {
   sourcingEvents SourcingEvent[]
   sourcingComments SourcingComment[]
   sourcingAttachments SourcingAttachment[]
+  sourcingSlaRecords SourcingSlaRecord[]
   purchaseReceipts PurchaseReceipt[]
   supplierEvaluations SupplierEvaluation[]
   invitations WorkspaceInvitation[]
@@ -432,6 +435,7 @@ model SourcingCase {
   nextAction String?
   nextActionAt DateTime? @db.Date
   slaDueAt DateTime? @db.Date
+  slaRule String?
   createdById String @db.ObjectId
   archivedAt DateTime? @db.Date
   createdAt DateTime @default(now()) @db.Date
@@ -442,12 +446,31 @@ model SourcingCase {
   events SourcingEvent[]
   comments SourcingComment[]
   attachments SourcingAttachment[]
+  slaRecords SourcingSlaRecord[]
   receipts PurchaseReceipt[]
 
   @@index([workspaceId, stage])
   @@index([workspaceId, assignedToId])
   @@index([workspaceId, nextActionAt])
   @@index([workspaceId, slaDueAt])
+}
+
+model SourcingSlaRecord {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  workspaceId String @db.ObjectId
+  caseId String @db.ObjectId
+  rule String // first_response | quote_submission | approval | shipment
+  ownerId String? @db.ObjectId
+  startedAt DateTime @db.Date
+  dueAt DateTime @db.Date
+  completedAt DateTime? @db.Date
+  onTime Boolean?
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sourcingCase SourcingCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, rule, dueAt])
+  @@index([caseId, rule, completedAt])
+  @@index([workspaceId, ownerId, completedAt])
 }
 
 model SourcingReminder {

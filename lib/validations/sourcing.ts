@@ -135,7 +135,20 @@ export const sourcingNextActionSchema = z.object({
   slaDueAt: optionalDateTime,
 });
 
+const timeOfDay = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use HH:MM");
+const timezone = z.string().trim().min(1).max(100).refine((value) => {
+  try { Intl.DateTimeFormat("en-US", { timeZone: value }); return true; } catch { return false; }
+}, "Enter a valid IANA timezone");
+const slaRuleHours = z.coerce.number().positive().max(720);
+export const sourcingSlaSettingsSchema = z.object({
+  timezone,
+  businessHours: z.object({ start: timeOfDay, end: timeOfDay, weekdays: z.array(z.number().int().min(1).max(7)).min(1).max(7) }).refine((value) => value.start < value.end, "Business-hours end must be after start"),
+  rules: z.object({ first_response: slaRuleHours, quote_submission: slaRuleHours, approval: slaRuleHours, shipment: slaRuleHours }),
+  escalation: z.object({ thresholdHours: z.coerce.number().min(0).max(720), recipientIds: z.array(z.string().min(1)).max(50).refine((ids) => new Set(ids).size === ids.length, "Escalation recipients must be unique") }),
+});
+
 export type SourcingCaseInput = z.infer<typeof sourcingCaseSchema>;
 export type SourcingQuoteInput = z.infer<typeof sourcingQuoteSchema>;
 export type SourcingCommentInput = z.infer<typeof sourcingCommentSchema>;
 export type SourcingNextActionInput = z.infer<typeof sourcingNextActionSchema>;
+export type SourcingSlaSettingsInput = z.infer<typeof sourcingSlaSettingsSchema>;
