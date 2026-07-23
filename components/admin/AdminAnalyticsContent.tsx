@@ -81,12 +81,12 @@ export default function AdminAnalyticsContent({
       `Products: ${c.products ?? 0}. Users: ${c.users ?? 0}. Suppliers: ${c.suppliers ?? 0}. Categories: ${c.categories ?? 0}.`,
       `Orders: ${c.orders ?? 0}. Invoices: ${c.invoices ?? 0}. Warehouses: ${c.warehouses ?? 0}.`,
       `Support tickets: ${c.tickets ?? 0}. Product reviews: ${c.reviews ?? 0}.`,
-      `Total revenue (orders + invoices): $${totalRev.toLocaleString()}.`,
+      `Total revenue (orders + invoices): ${formatMoney(totalRev, stats.currency.baseCurrency)}.`,
     ];
     const last = stats.trends?.[stats.trends.length - 1];
     if (last) {
       parts.push(
-        `Last month trend: ${last.orders} orders, $${last.revenue.toLocaleString()} revenue, ${last.products} new products, ${last.invoices} invoices.`,
+        `Last month trend: ${last.orders} orders, ${formatMoney(last.revenue, stats.currency.baseCurrency)} revenue, ${last.products} new products, ${last.invoices} invoices.`,
       );
     }
     return parts.join(" ");
@@ -508,7 +508,7 @@ export default function AdminAnalyticsContent({
                     orientation="right"
                     tick={{ fontSize: 12 }}
                     className="text-muted-foreground"
-                    tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+                    tickFormatter={(v) => `${formatCurrency(v / 1000)}k`}
                   />
                   <Tooltip
                     contentStyle={{
@@ -518,7 +518,7 @@ export default function AdminAnalyticsContent({
                     }}
                     formatter={(value, name) => [
                       name === "revenue"
-                        ? `$${Number(value ?? 0).toLocaleString()}`
+                        ? formatCurrency(Number(value ?? 0))
                         : (value ?? 0),
                       name === "revenue"
                         ? "Order revenue (excl. cancelled)"
@@ -845,7 +845,7 @@ export default function AdminAnalyticsContent({
                                 {p.totalQuantity}
                               </td>
                               <td className="py-2 text-right">
-                                ${p.totalRevenue.toLocaleString()}
+                                {formatCurrency(p.totalRevenue)}
                               </td>
                             </tr>
                           ))}
@@ -1210,7 +1210,7 @@ export default function AdminAnalyticsContent({
                         >
                           <span className="truncate">{o.orderNumber}</span>
                           <span className="text-muted-foreground shrink-0">
-                            ${o.total.toLocaleString()}
+                            {formatCurrency(o.total)}
                           </span>
                         </Link>
                         <p className="text-xs text-muted-foreground">

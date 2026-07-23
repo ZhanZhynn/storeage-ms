@@ -48,6 +48,7 @@ import {
 } from "@/components/shared";
 import type { Product, ProductStatus } from "@/types";
 import { cn } from "@/lib/utils";
+import { formatMoney } from "@/lib/money";
 import Image from "next/image";
 import ProductFormDialog from "@/components/products/ProductFormDialog";
 import { AlertDialogWrapper } from "@/components/dialogs";
@@ -551,7 +552,7 @@ export default function ProductDetailPage({
                   Price
                 </p>
                 <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                  ${product.price.toFixed(2)}
+                  {formatMoney(product.price, "MYR")}
                 </p>
               </div>
             </GlassCard>
@@ -735,7 +736,7 @@ export default function ProductDetailPage({
                       Total Revenue:
                     </span>
                     <span className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
-                      ${stats.totalRevenue.toFixed(2)}
+                      {formatMoney(stats.totalRevenue, "MYR")}
                     </span>
                   </div>
 
@@ -753,7 +754,7 @@ export default function ProductDetailPage({
                       Current Stock Value:
                     </span>
                     <span className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-                      ${(stats.totalValue ?? 0).toFixed(2)}
+                      {formatMoney(stats.totalValue ?? 0, "MYR")}
                     </span>
                   </div>
                 </div>
@@ -794,7 +795,7 @@ export default function ProductDetailPage({
                           Order {order.orderNumber}
                         </h4>
                         <p className="text-sm text-gray-600 dark:text-white/60 mt-1">
-                          Quantity: {order.quantity} × ${order.price.toFixed(2)}{" "}
+                          Quantity: {order.quantity} × {formatMoney(order.price, "MYR")}{" "}
                           • Date:{" "}
                           <ClientDate date={order.orderDate} />
                         </p>
@@ -806,14 +807,14 @@ export default function ProductDetailPage({
                           order.proportionalAmount !== order.subtotal ? (
                             <>
                               <span className="text-gray-500 dark:text-white/50 line-through mr-2">
-                                ${order.subtotal.toFixed(2)}
+                                {formatMoney(order.subtotal, "MYR")}
                               </span>
                               <span className="text-rose-600 dark:text-rose-400">
-                                ${order.proportionalAmount.toFixed(2)}
+                                {formatMoney(order.proportionalAmount, "MYR")}
                               </span>
                             </>
                           ) : (
-                            `$${order.subtotal.toFixed(2)}`
+                            formatMoney(order.subtotal, "MYR")
                           )}
                         </p>
                         <Badge

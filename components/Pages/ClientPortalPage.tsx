@@ -50,6 +50,7 @@ import { PageContentWrapper } from "@/components/shared";
 import { StatisticsCard } from "@/components/home/StatisticsCard";
 import { StatisticsCardSkeleton } from "@/components/home/StatisticsCardSkeleton";
 import { cn } from "@/lib/utils";
+import { formatMoney } from "@/lib/money";
 
 /** Catalog badge: Active = green (success), Inactive = secondary (gray) — matches admin/user style */
 function CatalogStatusBadge({ status }: { status: string }) {
@@ -265,69 +266,36 @@ export default function ClientPortalPage() {
             />
             <StatisticsCard
               title="Total Spent"
-              value={`$${dashboard.totalSpent.toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}`}
+              value={formatMoney(dashboard.totalSpent, "MYR")}
               description="Total order value"
               icon={DollarSign}
               variant="emerald"
               badges={[
                 {
                   label: "Paid",
-                  value: `$${(
-                    dashboard.paymentBreakdown?.paid ?? 0
-                  ).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`,
+                  value: formatMoney(dashboard.paymentBreakdown?.paid ?? 0, "MYR"),
                 },
                 {
                   label: "Due",
-                  value: `$${(
-                    dashboard.paymentBreakdown?.due ?? 0
-                  ).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`,
+                  value: formatMoney(dashboard.paymentBreakdown?.due ?? 0, "MYR"),
                 },
                 {
                   label: "Refund",
-                  value: `$${(
-                    dashboard.paymentBreakdown?.refund ?? 0
-                  ).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`,
+                  value: formatMoney(dashboard.paymentBreakdown?.refund ?? 0, "MYR"),
                 },
                 {
                   label: "Pending",
-                  value: `$${(
-                    dashboard.paymentBreakdown?.pending ?? 0
-                  ).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`,
+                  value: formatMoney(dashboard.paymentBreakdown?.pending ?? 0, "MYR"),
                 },
                 {
                   label: "Cancelled",
-                  value: `$${(
-                    dashboard.paymentBreakdown?.cancelled ?? 0
-                  ).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`,
+                  value: formatMoney(dashboard.paymentBreakdown?.cancelled ?? 0, "MYR"),
                 },
                 ...(dashboard.totalOrders > 0
                   ? [
                       {
                         label: "Avg/Order",
-                        value: `$${(
-                          dashboard.totalSpent / dashboard.totalOrders
-                        ).toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}`,
+                        value: formatMoney(dashboard.totalSpent / dashboard.totalOrders, "MYR"),
                       },
                     ]
                   : []),
@@ -335,10 +303,7 @@ export default function ClientPortalPage() {
             />
             <StatisticsCard
               title="Outstanding"
-              value={`$${dashboard.outstandingAmount.toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}`}
+              value={formatMoney(dashboard.outstandingAmount, "MYR")}
               description="Unpaid invoice balance"
               icon={AlertCircle}
               variant="rose"
@@ -400,7 +365,7 @@ export default function ClientPortalPage() {
                   <YAxis />
                   <Tooltip
                     formatter={(value) => [
-                      `$${Number(value).toLocaleString()}`,
+                      formatMoney(Number(value), "MYR"),
                       "Spent",
                     ]}
                   />
@@ -643,7 +608,7 @@ export default function ClientPortalPage() {
                                   )}
                                 </TableCell>
                                 <TableCell className="text-right">
-                                  ${p.price.toFixed(2)}
+                                  {formatMoney(p.price, "MYR")}
                                 </TableCell>
                                 <TableCell>
                                   <ProductStatusBadge status={p.status} />
@@ -710,7 +675,7 @@ export default function ClientPortalPage() {
                               </p>
                             </TableCell>
                             <TableCell className="text-right">
-                              ${order.total.toFixed(2)}
+                              {formatMoney(order.total, "MYR")}
                             </TableCell>
                             <TableCell>
                               {getOrderStatusBadge(order.status)}
@@ -779,11 +744,11 @@ export default function ClientPortalPage() {
                                 {invoice.invoiceNumber}
                               </Link>
                               <p className="text-xs text-muted-foreground">
-                                Total: ${invoice.total.toFixed(2)}
+                                Total: {formatMoney(invoice.total, "MYR")}
                               </p>
                             </TableCell>
                             <TableCell className="text-right font-semibold">
-                              ${invoice.amountDue.toFixed(2)}
+                              {formatMoney(invoice.amountDue, "MYR")}
                             </TableCell>
                             <TableCell>
                               {getInvoiceStatusBadge(invoice.status)}

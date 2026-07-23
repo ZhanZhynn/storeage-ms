@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { formatMoney } from "@/lib/money";
 import type { ClientPortalStats } from "@/types";
 
 type CardVariant = "sky" | "emerald" | "amber" | "violet" | "blue" | "teal";
@@ -202,7 +203,7 @@ export default function AdminClientPortalContent({
               />
               <AnalyticsCard
                 title="Revenue"
-                value={`$${((stats.revenue?.orders ?? 0) + (stats.revenue?.invoices ?? 0)).toLocaleString()}`}
+                value={formatMoney((stats.revenue?.orders ?? 0) + (stats.revenue?.invoices ?? 0), "MYR")}
                 icon={DollarSign}
                 description="Orders + Invoices"
                 variant="amber"
@@ -266,7 +267,7 @@ export default function AdminClientPortalContent({
                         {o.status}
                       </Badge>
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        ${o.total.toLocaleString()}
+                        {formatMoney(o.total, "MYR")}
                       </span>
                     </div>
                   </li>
@@ -340,7 +341,7 @@ export default function AdminClientPortalContent({
                         {i.status}
                       </Badge>
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        ${i.total.toLocaleString()}
+                        {formatMoney(i.total, "MYR")}
                       </span>
                     </div>
                   </li>
@@ -425,7 +426,7 @@ export default function AdminClientPortalContent({
                         {c.invoiceCount}
                       </td>
                       <td className="py-2 text-right text-gray-900 dark:text-white">
-                        ${c.totalSpent.toLocaleString()}
+                        {formatMoney(c.totalSpent, "MYR")}
                       </td>
                     </tr>
                   ))}

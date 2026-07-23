@@ -404,8 +404,8 @@ export const PRODUCTS_QUERY = `
             displayName
             sku
             barcode
-            price
-            compareAtPrice
+            price { amount currencyCode }
+            compareAtPrice { amount currencyCode }
             inventoryQuantity
             inventoryPolicy
             position

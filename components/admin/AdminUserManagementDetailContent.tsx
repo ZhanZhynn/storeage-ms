@@ -43,6 +43,7 @@ import { useUser, useUpdateUser, useDeleteUser } from "@/hooks/queries";
 import { useAuth } from "@/contexts";
 import { DeferredSelectGate, PageContentWrapper } from "@/components/shared";
 import { format } from "date-fns";
+import { formatMoney } from "@/lib/money";
 import type { UserForAdmin, UserRole } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -504,7 +505,7 @@ export default function AdminUserManagementDetailContent() {
                 <DollarSign className="h-5 w-5 text-violet-600 dark:text-violet-400" />
                 <div>
                   <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                    ${(overview.totalRevenue ?? 0).toLocaleString()}
+                    {formatMoney(overview.totalRevenue ?? 0, "MYR")}
                   </p>
                   <p className="text-xs text-gray-600 dark:text-gray-400">
                     Total Revenue
@@ -515,7 +516,7 @@ export default function AdminUserManagementDetailContent() {
                 <DollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 <div>
                   <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                    ${overview.totalSpent.toLocaleString()}
+                    {formatMoney(overview.totalSpent, "MYR")}
                   </p>
                   <p className="text-xs text-gray-600 dark:text-gray-400">
                     Total Spent
@@ -526,7 +527,7 @@ export default function AdminUserManagementDetailContent() {
                 <DollarSign className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                 <div>
                   <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                    ${overview.totalDue.toLocaleString()}
+                    {formatMoney(overview.totalDue, "MYR")}
                   </p>
                   <p className="text-xs text-gray-600 dark:text-gray-400">
                     Total Due

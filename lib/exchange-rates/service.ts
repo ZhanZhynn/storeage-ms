@@ -12,6 +12,18 @@ export type ExchangeRate = {
   fetchedAt: Date;
 };
 
+export type HistoricalRateSelection = "exact" | "prior" | "future";
+
+export type SelectedExchangeRate = ExchangeRate & {
+  selection: HistoricalRateSelection;
+};
+
+function isSameUtcDay(left: Date, right: Date): boolean {
+  return left.getUTCFullYear() === right.getUTCFullYear()
+    && left.getUTCMonth() === right.getUTCMonth()
+    && left.getUTCDate() === right.getUTCDate();
+}
+
 function asRate(value: unknown): number {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
     throw new Error("Exchange-rate provider returned an invalid rate");
@@ -34,7 +46,7 @@ export async function refreshExchangeRate(
   if (Number.isNaN(rateDate.getTime())) throw new Error("Exchange-rate provider returned an invalid date");
   const fetchedAt = new Date();
   const saved = await prisma.exchangeRate.upsert({
-    where: { baseCurrency_quoteCurrency: { baseCurrency, quoteCurrency } },
+    where: { baseCurrency_quoteCurrency_rateDate: { baseCurrency, quoteCurrency, rateDate } },
     create: { baseCurrency, quoteCurrency, rate, provider: "frankfurter", rateDate, fetchedAt },
     update: { rate, provider: "frankfurter", rateDate, fetchedAt },
   });
@@ -45,11 +57,40 @@ export async function getCurrentExchangeRate(
   baseCurrency = "CNY",
   quoteCurrency = "MYR",
 ): Promise<ExchangeRate | null> {
-  const saved = await prisma.exchangeRate.findUnique({
-    where: { baseCurrency_quoteCurrency: { baseCurrency, quoteCurrency } },
+  const saved = await prisma.exchangeRate.findFirst({
+    where: { baseCurrency, quoteCurrency },
+    orderBy: [{ rateDate: "desc" }, { fetchedAt: "desc" }],
   });
   if (!saved) return null;
   return saved;
+}
+
+/**
+ * Selects the exact historical rate when available, otherwise the latest rate
+ * known on or before the requested date. For dates before collection began,
+ * use the earliest later observation rather than silently using today's rate.
+ */
+export async function getExchangeRateForDate(
+  baseCurrency: string,
+  quoteCurrency: string,
+  date: Date,
+): Promise<SelectedExchangeRate | null> {
+  const prior = await prisma.exchangeRate.findFirst({
+    where: { baseCurrency, quoteCurrency, rateDate: { lte: date } },
+    orderBy: [{ rateDate: "desc" }, { fetchedAt: "desc" }],
+  });
+  if (prior) {
+    return {
+      ...prior,
+      selection: isSameUtcDay(prior.rateDate, date) ? "exact" : "prior",
+    };
+  }
+
+  const future = await prisma.exchangeRate.findFirst({
+    where: { baseCurrency, quoteCurrency, rateDate: { gt: date } },
+    orderBy: [{ rateDate: "asc" }, { fetchedAt: "asc" }],
+  });
+  return future ? { ...future, selection: "future" } : null;
 }
 
 export function isExchangeRateFresh(rate: Pick<ExchangeRate, "fetchedAt">): boolean {

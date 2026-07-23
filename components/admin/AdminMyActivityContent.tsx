@@ -40,6 +40,7 @@ import { StatisticsCardSkeleton } from "@/components/home/StatisticsCardSkeleton
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { formatMoney } from "@/lib/money";
 import type { Order } from "@/types";
 
 function getStatusBadgeClass(status: string): string {
@@ -262,11 +263,7 @@ export default function AdminMyActivityContent() {
     return filtered.slice(0, 5);
   }, [orders, searchTerm, authUser?.name, authUser?.email]);
 
-  const formatCurrency = (value: number) =>
-    `$${value.toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
+  const formatCurrency = (value: number) => formatMoney(value, "MYR");
 
   const tableSkeletonHeight = 280;
 
@@ -563,7 +560,7 @@ export default function AdminMyActivityContent() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-gray-800 dark:text-gray-200">
-                          ${Number(order.total).toFixed(2)}
+                          {formatMoney(Number(order.total), order.currency ?? "MYR")}
                         </TableCell>
                         <TableCell className="text-gray-800 dark:text-gray-200">
                           {order.items?.length ?? 0}

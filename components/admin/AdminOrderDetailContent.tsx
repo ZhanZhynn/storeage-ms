@@ -38,6 +38,7 @@ import {
   Truck,
 } from "lucide-react";
 import { useOrder, useUpdateOrder, useDeleteOrder } from "@/hooks/queries";
+import { formatMoney } from "@/lib/money";
 import {
   ClientDateTime,
   ClientRelativeTime,
@@ -579,13 +580,12 @@ export default function AdminOrderDetailContent({
                       </p>
                     )}
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      Quantity: {item.quantity} × $
-                      {Number(item.price).toFixed(2)}
+                      Quantity: {item.quantity} × {formatMoney(Number(item.price), order.currency ?? "MYR")}
                     </p>
                   </div>
                   <div className="text-left sm:text-right mt-2 sm:mt-0 flex flex-col items-end gap-2">
                     <p className="font-semibold text-sky-600 dark:text-sky-400 text-lg">
-                      ${Number(item.subtotal).toFixed(2)}
+                      {formatMoney(Number(item.subtotal), order.currency ?? "MYR")}
                     </p>
                     {order.paymentStatus === "paid" && item.productId && (
                       <ProductReviewsSection
@@ -848,14 +848,14 @@ export default function AdminOrderDetailContent({
                 Subtotal:
               </span>
               <span className="font-medium text-gray-900 dark:text-white">
-                ${Number(order.subtotal).toFixed(2)}
+                {formatMoney(Number(order.subtotal), order.currency ?? "MYR")}
               </span>
             </div>
             {order.tax != null && order.tax > 0 && (
               <div className="flex justify-between text-sm p-2 rounded-lg bg-gradient-to-r from-amber-100/40 via-amber-50/20 to-transparent dark:from-amber-500/10 dark:via-amber-500/5 dark:to-transparent">
                 <span className="text-gray-600 dark:text-gray-400">Tax:</span>
                 <span className="font-medium text-gray-900 dark:text-white">
-                  ${Number(order.tax).toFixed(2)}
+                  {formatMoney(Number(order.tax), order.currency ?? "MYR")}
                 </span>
               </div>
             )}
@@ -865,7 +865,7 @@ export default function AdminOrderDetailContent({
                   Shipping:
                 </span>
                 <span className="font-medium text-gray-900 dark:text-white">
-                  ${Number(order.shipping).toFixed(2)}
+                  {formatMoney(Number(order.shipping), order.currency ?? "MYR")}
                 </span>
               </div>
             )}
@@ -875,7 +875,7 @@ export default function AdminOrderDetailContent({
                   Discount:
                 </span>
                 <span className="font-medium text-rose-600 dark:text-rose-400">
-                  -${Number(order.discount).toFixed(2)}
+                  -{formatMoney(Number(order.discount), order.currency ?? "MYR")}
                 </span>
               </div>
             )}
@@ -883,7 +883,7 @@ export default function AdminOrderDetailContent({
             <div className="flex justify-between text-lg font-semibold p-3 rounded-xl bg-gradient-to-r from-emerald-100/50 via-emerald-50/30 to-transparent dark:from-emerald-500/15 dark:via-emerald-500/10 dark:to-transparent border border-emerald-200/30 dark:border-emerald-400/20">
               <span className="text-gray-900 dark:text-white">Total:</span>
               <span className="text-emerald-600 dark:text-emerald-400">
-                ${Number(order.total).toFixed(2)}
+                {formatMoney(Number(order.total), order.currency ?? "MYR")}
               </span>
             </div>
           </div>
@@ -1045,7 +1045,7 @@ export default function AdminOrderDetailContent({
                     Cancel this order and issue a full refund via Stripe?
                     Amount:{" "}
                     <span className="font-semibold">
-                      ${Number(order.total).toFixed(2)}
+                      {formatMoney(Number(order.total), order.currency ?? "MYR")}
                     </span>
                     . Status will be cancelled, stock restored, invoice
                     cancelled, and all related pages will update.

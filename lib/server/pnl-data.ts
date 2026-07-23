@@ -62,7 +62,7 @@ async function calculatePnl(
     await Promise.all([
       prisma.order.findMany({
         where: { userId, status: { not: "cancelled" }, createdAt: { gte: from, lte: to } },
-        select: { id: true, total: true, shipping: true, currency: true },
+        select: { id: true, total: true, shipping: true, currency: true, createdAt: true },
       }),
       prisma.shopeeOrder.findMany({
         where: {
@@ -78,6 +78,7 @@ async function calculatePnl(
           serviceFee: true,
           sellerTxnFee: true,
           shippingFee: true,
+          shopeeCreatedAt: true,
         },
       }),
       prisma.orderItem.findMany({
@@ -94,7 +95,7 @@ async function calculatePnl(
             shopeeCreatedAt: { gte: from, lte: to },
           },
         },
-        select: { variantId: true, productId: true, quantity: true, price: true, order: { select: { currency: true } } },
+        select: { variantId: true, productId: true, quantity: true, price: true, order: { select: { currency: true, shopeeCreatedAt: true } } },
       }),
       prisma.shopeeReturn.findMany({
         where: {
@@ -102,19 +103,19 @@ async function calculatePnl(
           status: "COMPLETED",
           shopeeCreatedAt: { gte: from, lte: to },
         },
-        select: { refundAmount: true, currency: true },
+        select: { refundAmount: true, currency: true, shopeeCreatedAt: true },
       }),
       prisma.order.findMany({
         where: { userId, paymentStatus: "refunded", createdAt: { gte: from, lte: to } },
-        select: { total: true, currency: true },
+        select: { total: true, currency: true, createdAt: true },
       }),
     ]);
 
-  const sum = <T>(items: T[], getAmount: (item: T) => number, getCurrency: (item: T) => string | null | undefined, legacyBaseCurrency = false) =>
-    items.reduce((total, item) => total + (currency.convert(getAmount(item), getCurrency(item), legacyBaseCurrency) ?? 0), 0);
+  const sum = <T>(items: T[], getAmount: (item: T) => number, getCurrency: (item: T) => string | null | undefined, getOccurredAt: (item: T) => Date | null | undefined, legacyBaseCurrency = false) =>
+    items.reduce((total, item) => total + (currency.convert(getAmount(item), getCurrency(item), legacyBaseCurrency, getOccurredAt(item)) ?? 0), 0);
 
-  const wmsRevenue = sum(wmsOrders, (o) => o.total, (o) => o.currency, true);
-  const shopeeRevenue = sum(shopeeOrders, (o) => o.totalAmount, (o) => o.currency);
+  const wmsRevenue = sum(wmsOrders, (o) => o.total, (o) => o.currency, (o) => o.createdAt, true);
+  const shopeeRevenue = sum(shopeeOrders, (o) => o.totalAmount, (o) => o.currency, (o) => o.shopeeCreatedAt);
 
   const productIds = [...new Set(wmsInvoiceStats.map((i) => i.productId))];
   const products = productIds.length > 0
@@ -130,19 +131,20 @@ async function calculatePnl(
     return s + (currency.convert(cost * i.quantity, null, true) ?? 0);
   }, 0);
 
-  const shopeeCogs = sum(shopeeFeeStats, (i) => i.price * i.quantity, (i) => i.order.currency);
+  const shopeeCogs = sum(shopeeFeeStats, (i) => i.price * i.quantity, (i) => i.order.currency, (i) => i.order.shopeeCreatedAt);
 
   const marketplaceFees = sum(
     shopeeOrders,
     (o) => (o.commissionFee ?? 0) + (o.serviceFee ?? 0) + (o.sellerTxnFee ?? 0),
     (o) => o.currency,
+    (o) => o.shopeeCreatedAt,
   );
 
-  const wmsShipping = sum(wmsOrders, (o) => o.shipping ?? 0, (o) => o.currency, true);
-  const shopeeShipping = sum(shopeeOrders, (o) => o.shippingFee ?? 0, (o) => o.currency);
+  const wmsShipping = sum(wmsOrders, (o) => o.shipping ?? 0, (o) => o.currency, (o) => o.createdAt, true);
+  const shopeeShipping = sum(shopeeOrders, (o) => o.shippingFee ?? 0, (o) => o.currency, (o) => o.shopeeCreatedAt);
 
-  const wmsReturnsTotal = sum(wmsReturns, (o) => o.total, (o) => o.currency, true);
-  const shopeeReturnsTotal = sum(shopeeReturns, (r) => r.refundAmount, (r) => r.currency);
+  const wmsReturnsTotal = sum(wmsReturns, (o) => o.total, (o) => o.currency, (o) => o.createdAt, true);
+  const shopeeReturnsTotal = sum(shopeeReturns, (r) => r.refundAmount, (r) => r.currency, (r) => r.shopeeCreatedAt);
 
   const revenue = { wms: wmsRevenue, shopee: shopeeRevenue, total: wmsRevenue + shopeeRevenue };
   const cogs = { wms: wmsCogs, shopee: shopeeCogs, total: wmsCogs + shopeeCogs };

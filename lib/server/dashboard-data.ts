@@ -100,7 +100,7 @@ async function getStoreOrderIds(productOwnerUserId: string): Promise<string[]> {
 }
 
 export async function getDashboardForAdmin(userId: string): Promise<DashboardStats> {
-  const cacheKey = `${cacheKeys.dashboard.overview(userId)}:currency-v2`;
+  const cacheKey = `${cacheKeys.dashboard.overview(userId)}:currency-v3`;
   const cached = await getCache<DashboardStats>(cacheKey);
   if (cached) return cached;
 
@@ -334,7 +334,7 @@ export async function getDashboardForAdmin(userId: string): Promise<DashboardSta
         }),
         prisma.shopeeOrder.findMany({
           where: { shopId: { in: shopeeShopIds } },
-          select: { totalAmount: true, currency: true },
+          select: { totalAmount: true, currency: true, shopeeCreatedAt: true, createdAt: true },
         }),
         prisma.shopeeOrder.groupBy({
           by: ["orderStatus"],
@@ -356,11 +356,11 @@ export async function getDashboardForAdmin(userId: string): Promise<DashboardSta
     }
 
     const shopeeRevenue = shopeeOrdersForCurrency.reduce(
-      (total, order) => total + (currency.convert(order.totalAmount, order.currency) ?? 0),
+      (total, order) => total + (currency.convert(order.totalAmount, order.currency, false, order.shopeeCreatedAt ?? order.createdAt) ?? 0),
       0,
     );
     const includedShopeeOrders = shopeeOrdersForCurrency.filter(
-      (order) => currency.convert(order.totalAmount, order.currency) !== null,
+      (order) => currency.convert(order.totalAmount, order.currency, false, order.shopeeCreatedAt ?? order.createdAt) !== null,
     ).length;
     shopeeOrderAnalytics = {
       totalOrders: shopeeOrderCount,
@@ -387,7 +387,7 @@ export async function getDashboardForAdmin(userId: string): Promise<DashboardSta
         }),
         prisma.lazadaOrder.findMany({
           where: { shopId: { in: lazadaShopIds } },
-          select: { totalAmount: true, currency: true },
+          select: { totalAmount: true, currency: true, lazadaCreatedAt: true, createdAt: true },
         }),
         prisma.lazadaOrder.groupBy({
           by: ["orderStatus"],
@@ -402,11 +402,11 @@ export async function getDashboardForAdmin(userId: string): Promise<DashboardSta
     }
 
     const lazadaRevenue = lazadaOrdersForCurrency.reduce(
-      (total, order) => total + (currency.convert(order.totalAmount, order.currency) ?? 0),
+      (total, order) => total + (currency.convert(order.totalAmount, order.currency, false, order.lazadaCreatedAt ?? order.createdAt) ?? 0),
       0,
     );
     const includedLazadaOrders = lazadaOrdersForCurrency.filter(
-      (order) => currency.convert(order.totalAmount, order.currency) !== null,
+      (order) => currency.convert(order.totalAmount, order.currency, false, order.lazadaCreatedAt ?? order.createdAt) !== null,
     ).length;
     lazadaOrderAnalytics = {
       totalOrders: lazadaOrderCount,

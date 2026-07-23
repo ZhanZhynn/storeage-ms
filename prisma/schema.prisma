@@ -1065,6 +1065,7 @@ model ShopeeAdsDailyPerformance {
   broadItemSold      Int      @default(0)
   costPerConversion  Float    @default(0)
   totalBalance       Float?   // snapshot of ads credit balance that day
+  currency           String?  // Currency supplied by the ads performance response
   syncedAt           DateTime @default(now()) @db.Date
   shop               ShopeeShop @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
@@ -1098,6 +1099,7 @@ model ShopeeAdsCampaignDailyPerformance {
   directItemSold     Int      @default(0)
   broadItemSold      Int      @default(0)
   costPerConversion  Float    @default(0)
+  currency           String?  // Currency supplied by the ads performance response
   syncedAt           DateTime @default(now()) @db.Date
   shop               ShopeeShop @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
@@ -1176,7 +1178,7 @@ model ExchangeRate {
   rateDate DateTime @db.Date
   fetchedAt DateTime @db.Date
 
-  @@unique([baseCurrency, quoteCurrency])
+  @@unique([baseCurrency, quoteCurrency, rateDate])
   @@index([fetchedAt])
 }
 
@@ -1583,6 +1585,7 @@ model ShopifyProductVariant {
   barcode            String?
   price              Float
   compareAtPrice     Float?
+  currency           String?   // Currency supplied by Shopify's MoneyV2 price fields
   inventoryQuantity  Int       @default(0)
   inventoryPolicy    String?
   position           Int?

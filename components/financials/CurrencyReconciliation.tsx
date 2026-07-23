@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { UnknownCurrencyReconciliation } from "@/lib/server/financial-currency";
+import { formatMoney } from "@/lib/money";
 
 export function CurrencyReconciliation() {
   const { data, isLoading } = useQuery({
@@ -44,7 +45,7 @@ export function CurrencyReconciliation() {
                 <tr key={`${record.source}:${record.recordId}`} className="border-b last:border-0">
                   <td className="py-2">{record.source}</td>
                   <td className="py-2 font-mono text-xs">{record.reference}</td>
-                  <td className="py-2">{record.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (currency unknown)</td>
+                  <td className="py-2">{formatMoney(record.amount, "MYR")} (currency unknown; shown in default MYR format)</td>
                   <td className="py-2">{record.occurredAt ? new Date(record.occurredAt).toLocaleDateString() : "-"}</td>
                 </tr>
               ))}

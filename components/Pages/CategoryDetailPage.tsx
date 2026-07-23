@@ -45,6 +45,7 @@ import { AlertDialogWrapper } from "@/components/dialogs";
 import type { Category } from "@/types";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { formatMoney } from "@/lib/money";
 
 /**
  * Color variants for glassmorphic cards
@@ -593,7 +594,7 @@ export default function CategoryDetailPage({
                     Total Revenue:
                   </span>
                   <span className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
-                    ${stats.totalRevenue.toFixed(2)}
+                    {formatMoney(stats.totalRevenue, "MYR")}
                   </span>
                 </div>
 
@@ -613,7 +614,7 @@ export default function CategoryDetailPage({
                     Current Stock Value:
                   </span>
                   <span className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-                    ${stats.totalValue.toFixed(2)}
+                    {formatMoney(stats.totalValue, "MYR")}
                   </span>
                 </div>
               </div>
@@ -718,7 +719,7 @@ export default function CategoryDetailPage({
                         Product: {order.productName} (SKU: {order.productSku})
                       </p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Quantity: {order.quantity} × ${order.price.toFixed(2)} •
+                        Quantity: {order.quantity} × {formatMoney(order.price, "MYR")} •
                         Date: <ClientDate date={order.orderDate} />
                       </p>
                     </div>
@@ -729,14 +730,14 @@ export default function CategoryDetailPage({
                         order.proportionalAmount !== order.subtotal ? (
                           <>
                             <span className="text-gray-500 dark:text-white/50 line-through mr-2">
-                              ${order.subtotal.toFixed(2)}
+                              {formatMoney(order.subtotal, "MYR")}
                             </span>
                             <span className="text-rose-600 dark:text-rose-400">
-                              ${order.proportionalAmount.toFixed(2)}
+                              {formatMoney(order.proportionalAmount, "MYR")}
                             </span>
                           </>
                         ) : (
-                          `$${order.subtotal.toFixed(2)}`
+                          formatMoney(order.subtotal, "MYR")
                         )}
                       </p>
                       <Badge

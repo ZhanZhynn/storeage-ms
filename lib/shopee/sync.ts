@@ -1074,6 +1074,7 @@ function mapAdsRow(row: Record<string, number | string>) {
     directItemSold: Number(row.direct_item_sold ?? 0),
     broadItemSold: Number(row.broad_item_sold ?? 0),
     costPerConversion: Number(row.cost_per_conversion ?? 0),
+    currency: typeof row.currency === "string" ? row.currency.trim().toUpperCase() || null : null,
   };
 }
 
@@ -1190,7 +1191,7 @@ export async function syncShopeeAds(
       const balanceResult = await withAdsRetry(() => sdk.ads.getTotalBalance());
       const balanceResp = (
         balanceResult as unknown as {
-          response?: { total_balance?: number; data_timestamp?: number };
+          response?: { total_balance?: number; data_timestamp?: number; currency?: string };
         }
       ).response;
       const totalBalance = balanceResp?.total_balance;
@@ -1198,8 +1199,8 @@ export async function syncShopeeAds(
         const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
         await prisma.shopeeAdsDailyPerformance.upsert({
           where: { shopId_date: { shopId: shop.id, date: today } },
-          update: { totalBalance, syncedAt: new Date() },
-          create: { shopId: shop.id, userId, date: today, totalBalance },
+          update: { totalBalance, currency: balanceResp?.currency?.trim().toUpperCase() || undefined, syncedAt: new Date() },
+          create: { shopId: shop.id, userId, date: today, totalBalance, currency: balanceResp?.currency?.trim().toUpperCase() || null },
         });
       }
     } catch (error) {

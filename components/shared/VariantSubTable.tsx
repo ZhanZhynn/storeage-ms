@@ -25,6 +25,7 @@ interface ShopifyVariant {
   barcode?: string | null;
   price: number;
   compareAtPrice?: number | null;
+  currency?: string | null;
   inventoryQuantity: number;
   inventoryPolicy?: string | null;
   position?: number | null;
@@ -133,10 +134,10 @@ function ShopifyVariantRow({ variant }: { variant: ShopifyVariant }) {
         {variant.title || variant.displayName || "—"}
       </td>
       <td className="px-3 py-2 text-sm font-medium">
-        {formatMoney(variant.price, "MYR")}
+        {formatMoney(variant.price, variant.currency ?? "MYR")}
         {variant.compareAtPrice != null && variant.compareAtPrice > variant.price && (
           <span className="ml-2 text-xs text-muted-foreground line-through">
-            {formatMoney(variant.compareAtPrice, "MYR")}
+            {formatMoney(variant.compareAtPrice, variant.currency ?? "MYR")}
           </span>
         )}
       </td>

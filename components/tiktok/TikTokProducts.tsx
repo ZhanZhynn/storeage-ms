@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Package, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { MarketplaceDataTable, VariantSubTable } from "@/components/shared";
+import { formatMoney } from "@/lib/money";
 
 interface TikTokProductRow {
   id: string;
@@ -115,7 +116,7 @@ export default function TikTokProducts() {
           const firstVariant = row.original.variants?.[0];
           return (
             <span className="font-medium">
-              {firstVariant?.price != null ? `${firstVariant.price.toFixed(2)}` : "N/A"}
+              {firstVariant?.price != null ? formatMoney(firstVariant.price, firstVariant.currency ?? "MYR") : "N/A"}
             </span>
           );
         },

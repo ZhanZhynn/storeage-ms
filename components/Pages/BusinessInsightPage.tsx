@@ -64,6 +64,7 @@ import { PageContentWrapper } from "@/components/shared";
 import { useProducts, useOrders } from "@/hooks/queries";
 import { queryKeys } from "@/lib/react-query";
 import { exportToExcel, exportToCSV } from "@/lib/export";
+import { formatMoney } from "@/lib/money";
 import type { ProductForHome } from "@/lib/server/home-data";
 import type { OrderForPage } from "@/lib/server/orders-data";
 import type { CombinedOrder, CombinedInsights } from "@/lib/server/combined-orders-data";
@@ -560,7 +561,7 @@ export default function BusinessInsightPage({
         {
           Section: "Key Metrics",
           Metric: "Total Value",
-          Value: `$${analyticsData.totalValue.toLocaleString()}`,
+          Value: formatMoney(analyticsData.totalValue, "MYR"),
           "Additional Info": "",
         },
         {
@@ -584,7 +585,7 @@ export default function BusinessInsightPage({
         {
           Section: "Key Metrics",
           Metric: "Average Price",
-          Value: `$${analyticsData.averagePrice.toFixed(2)}`,
+          Value: formatMoney(analyticsData.averagePrice, "MYR"),
           "Additional Info": "",
         },
         {
@@ -596,7 +597,7 @@ export default function BusinessInsightPage({
         {
           Section: "Key Metrics",
           Metric: "Value Density",
-          Value: `$${analyticsData.valueDensity.toFixed(2)}`,
+          Value: formatMoney(analyticsData.valueDensity, "MYR"),
           "Additional Info": "",
         },
         {
@@ -614,7 +615,7 @@ export default function BusinessInsightPage({
           Section: "Category Distribution",
           Metric: cat.name,
           Value: cat.value.toString(),
-          "Additional Info": `Count: ${cat.count}, Value: $${cat.totalValue.toLocaleString()}`,
+          "Additional Info": `Count: ${cat.count}, Value: ${formatMoney(cat.totalValue, "MYR")}`,
         })),
 
         // Empty row separator
@@ -646,7 +647,7 @@ export default function BusinessInsightPage({
         ...analyticsData.topProducts.map((product, index) => ({
           Section: "Top Products",
           Metric: product.name,
-          Value: `$${product.value.toLocaleString()}`,
+          Value: formatMoney(product.value, "MYR"),
           "Additional Info": `Quantity: ${product.quantity}`,
         })),
 
@@ -705,7 +706,7 @@ export default function BusinessInsightPage({
         { Metric: "Total Products", Value: analyticsData.totalProducts },
         {
           Metric: "Total Value",
-          Value: `$${analyticsData.totalValue.toLocaleString()}`,
+          Value: formatMoney(analyticsData.totalValue, "MYR"),
         },
         { Metric: "Low Stock Items", Value: analyticsData.lowStockItems },
         { Metric: "Out of Stock Items", Value: analyticsData.outOfStockItems },
@@ -715,7 +716,7 @@ export default function BusinessInsightPage({
         },
         {
           Metric: "Average Price",
-          Value: `$${analyticsData.averagePrice.toFixed(2)}`,
+          Value: formatMoney(analyticsData.averagePrice, "MYR"),
         },
         {
           Metric: "Stock Utilization",
@@ -723,7 +724,7 @@ export default function BusinessInsightPage({
         },
         {
           Metric: "Value Density",
-          Value: `$${analyticsData.valueDensity.toFixed(2)}`,
+          Value: formatMoney(analyticsData.valueDensity, "MYR"),
         },
         {
           Metric: "Stock Coverage",
@@ -767,7 +768,7 @@ export default function BusinessInsightPage({
   const buildAiSummary = useCallback(() => {
     const parts = [
       `Total products: ${analyticsData.totalProducts}.`,
-      `Total inventory value: $${analyticsData.totalValue.toLocaleString()}.`,
+      `Total inventory value: ${formatMoney(analyticsData.totalValue, "MYR")}.`,
       `Low stock items (qty ≤ 20): ${analyticsData.lowStockItems}.`,
       `Out of stock: ${analyticsData.outOfStockItems}.`,
       `Stock utilization: ${analyticsData.stockUtilization.toFixed(1)}%.`,
@@ -992,7 +993,7 @@ export default function BusinessInsightPage({
                 />
                 <AnalyticsCard
                   title="Total Value"
-                  value={`$${analyticsData.totalValue.toLocaleString()}`}
+                  value={formatMoney(analyticsData.totalValue, "MYR")}
                   icon={DollarSign}
                   variant="emerald"
                   description="Total inventory value"
@@ -1166,7 +1167,7 @@ export default function BusinessInsightPage({
                                 };
                                 return [
                                   value != null
-                                    ? `$${Number(value).toLocaleString()}`
+                                    ? formatMoney(Number(value), "MYR")
                                     : "$0",
                                   labels[name as string] || name,
                                 ];
@@ -1318,7 +1319,7 @@ export default function BusinessInsightPage({
                           <Tooltip
                             formatter={(value) => [
                               value != null
-                                ? `$${Number(value).toLocaleString()}`
+                                ? formatMoney(Number(value), "MYR")
                                 : "$0",
                               "Value",
                             ]}
@@ -1345,7 +1346,7 @@ export default function BusinessInsightPage({
                           <Tooltip
                             formatter={(value) => [
                               value != null
-                                ? `$${Number(value).toLocaleString()}`
+                                ? formatMoney(Number(value), "MYR")
                                 : "$0",
                               "Value",
                             ]}
@@ -1420,7 +1421,7 @@ export default function BusinessInsightPage({
                           <Tooltip
                             formatter={(value) => [
                               value
-                                ? `$${Number(value).toLocaleString()}`
+                                ? formatMoney(Number(value), "MYR")
                                 : "$0",
                               "Value",
                             ]}
@@ -1472,7 +1473,7 @@ export default function BusinessInsightPage({
                             <Tooltip
                               formatter={(value) => [
                                 value != null
-                                  ? `$${Number(value).toLocaleString()}`
+                                  ? formatMoney(Number(value), "MYR")
                                   : "$0",
                                 "Revenue",
                               ]}
@@ -1503,7 +1504,7 @@ export default function BusinessInsightPage({
                             <Tooltip
                               formatter={(value) => [
                                 value != null
-                                  ? `$${Number(value).toLocaleString()}`
+                                  ? formatMoney(Number(value), "MYR")
                                   : "$0",
                                 "Revenue",
                               ]}
@@ -1586,7 +1587,7 @@ export default function BusinessInsightPage({
                     Average Price
                   </span>
                   <span className="font-semibold text-gray-900 dark:text-white">
-                    ${analyticsData.averagePrice.toFixed(2)}
+                    {formatMoney(analyticsData.averagePrice, "MYR")}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -1648,7 +1649,7 @@ export default function BusinessInsightPage({
                     Value Density
                   </span>
                   <span className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-                    ${analyticsData.valueDensity.toFixed(2)} per product
+                    {formatMoney(analyticsData.valueDensity, "MYR")} per product
                   </span>
                 </div>
               </div>

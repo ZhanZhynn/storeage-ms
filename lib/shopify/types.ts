@@ -80,8 +80,8 @@ export interface ShopifyProductVariantNode {
   displayName: string;
   sku: string | null;
   barcode: string | null;
-  price: string; // Money scalar (e.g. "10.00")
-  compareAtPrice: string | null; // Money scalar, nullable
+  price: MoneyV2;
+  compareAtPrice: MoneyV2 | null;
   inventoryQuantity: number | null;
   inventoryPolicy: "DENY" | "CONTINUE";
   position: number;

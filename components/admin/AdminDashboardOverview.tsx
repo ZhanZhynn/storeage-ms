@@ -39,6 +39,7 @@ import {
 import { PageContentWrapper } from "@/components/shared";
 import { format } from "date-fns";
 import type { Order } from "@/types";
+import { formatMoney } from "@/lib/money";
 
 /** Shipping address may include name/email in stored JSON */
 function getCustomerDisplay(order: Order): string {
@@ -364,7 +365,7 @@ export default function AdminDashboardOverview({
                         {order.id.slice(0, 8)}…
                       </TableCell>
                       <TableCell>{getCustomerDisplay(order)}</TableCell>
-                      <TableCell>${Number(order.total).toFixed(2)}</TableCell>
+                      <TableCell>{formatMoney(Number(order.total), order.currency ?? "MYR")}</TableCell>
                       <TableCell>{order.items?.length ?? 0}</TableCell>
                       <TableCell className="text-muted-foreground">
                         {format(

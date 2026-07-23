@@ -42,6 +42,7 @@ import { PageContentWrapper } from "@/components/shared";
 import { StatisticsCard } from "@/components/home/StatisticsCard";
 import { StatisticsCardSkeleton } from "@/components/home/StatisticsCardSkeleton";
 import { cn } from "@/lib/utils";
+import { formatMoney } from "@/lib/money";
 
 /**
  * Get order status badge with distinct colors (matches order table/detail)
@@ -188,10 +189,7 @@ export default function SupplierPortalPage() {
                 },
                 {
                   label: "Product value",
-                  value: `$${(dashboard.productValue ?? 0).toLocaleString(
-                    undefined,
-                    { minimumFractionDigits: 2, maximumFractionDigits: 2 },
-                  )}`,
+                  value: formatMoney(dashboard.productValue ?? 0, "MYR"),
                 },
               ]}
             />
@@ -252,63 +250,35 @@ export default function SupplierPortalPage() {
             />
             <StatisticsCard
               title="Total Revenue"
-              value={`$${(dashboard.totalRevenue ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              value={formatMoney(dashboard.totalRevenue ?? 0, "MYR")}
               description="Revenue from your products (excl. cancelled)"
               icon={DollarSign}
               variant="violet"
               badges={[
                 {
                   label: "Paid",
-                  value: `$${(
-                    dashboard.revenueBreakdown?.paid ?? dashboard.paidRevenue
-                  ).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`,
+                  value: formatMoney(dashboard.revenueBreakdown?.paid ?? dashboard.paidRevenue, "MYR"),
                 },
                 {
                   label: "Due",
-                  value: `$${(
-                    dashboard.revenueBreakdown?.due ?? 0
-                  ).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`,
+                  value: formatMoney(dashboard.revenueBreakdown?.due ?? 0, "MYR"),
                 },
                 {
                   label: "Refund",
-                  value: `$${(
-                    dashboard.revenueBreakdown?.refund ?? 0
-                  ).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`,
+                  value: formatMoney(dashboard.revenueBreakdown?.refund ?? 0, "MYR"),
                 },
                 {
                   label: "Pending",
-                  value: `$${(
-                    dashboard.revenueBreakdown?.pending ??
-                    dashboard.unpaidRevenue
-                  ).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`,
+                  value: formatMoney(dashboard.revenueBreakdown?.pending ?? dashboard.unpaidRevenue, "MYR"),
                 },
                 ...(dashboard.totalOrders > 0
                   ? [
                       {
                         label: "Avg/Order",
-                        value: `$${(
-                          dashboard.totalRevenue /
-                          Math.max(
-                            1,
-                            dashboard.totalOrders -
-                              (dashboard.orderStatusCounts?.cancelled ?? 0),
-                          )
-                        ).toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}`,
+                        value: formatMoney(
+                          dashboard.totalRevenue / Math.max(1, dashboard.totalOrders - (dashboard.orderStatusCounts?.cancelled ?? 0)),
+                          "MYR",
+                        ),
                       },
                     ]
                   : []),
@@ -347,7 +317,7 @@ export default function SupplierPortalPage() {
                   <YAxis />
                   <Tooltip
                     formatter={(value) => [
-                      `$${Number(value).toLocaleString()}`,
+                      formatMoney(Number(value), "MYR"),
                       "Revenue",
                     ]}
                   />
@@ -409,7 +379,7 @@ export default function SupplierPortalPage() {
                               </Link>
                             </TableCell>
                             <TableCell className="text-right">
-                              ${order.total.toFixed(2)}
+                              {formatMoney(order.total, "MYR")}
                             </TableCell>
                             <TableCell>
                               {getStatusBadge(order.status)}
